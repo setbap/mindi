@@ -18,6 +18,7 @@ import {
 } from "@/domain/resize";
 import type { NodeRecord } from "@/domain/types";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
+import { useI18n } from "@/i18n/i18n-context";
 import { cn } from "@/lib/utils";
 
 interface NodeViewProps {
@@ -45,6 +46,7 @@ export function NodeView({
   onCommitWidth,
   onPreviewWidth,
 }: NodeViewProps) {
+  const { t } = useI18n();
   const isFocused = mode.focusedId === node.id;
   const isEditing = mode.kind === "editing" && mode.focusedId === node.id;
   const isDesktop = useIsDesktop();
@@ -66,7 +68,8 @@ export function NodeView({
     onPreviewWidth?.(null);
   }, [node.width, onPreviewWidth]);
 
-  const label = nodeLabel(node.markdown);
+  const label =
+    node.markdown.trim().length === 0 ? t("emptyNode") : nodeLabel(node.markdown);
 
   function onEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -166,10 +169,10 @@ export function NodeView({
     >
       {isEditing ? (
         <label className="flex flex-col gap-1">
-          <span className="sr-only">Edit node markdown</span>
+          <span className="sr-only">{t("editNodeMarkdown")}</span>
           <textarea
             ref={textareaRef}
-            aria-label="Node markdown"
+            aria-label={t("nodeMarkdown")}
             className="border-input bg-background focus-visible:ring-ring nodrag nopan nowheel min-h-24 w-full rounded-md border p-2 font-mono text-sm focus-visible:ring-2 focus-visible:outline-none"
             value={mode.draft}
             dir="auto"
@@ -196,7 +199,7 @@ export function NodeView({
           }}
         >
           {node.markdown === "" ? (
-            "Start typing…"
+            t("startTyping")
           ) : (
             <SafeMarkdown
               markdown={node.markdown}
@@ -209,7 +212,7 @@ export function NodeView({
       {isDesktop && isFocused && !isEditing ? (
         <button
           type="button"
-          aria-label="Resize Node"
+          aria-label={t("resizeNode")}
           data-testid={`resize-handle-${node.id}`}
           className="nopan nodrag absolute top-0 right-0 h-full w-2 cursor-ew-resize rounded-r-md bg-transparent hover:bg-black/10"
           onPointerDown={onResizePointerDown}

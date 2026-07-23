@@ -1,5 +1,5 @@
 import { ForestInvariantError } from "./forest";
-import type { CatalogRecord, MapRecord } from "./types";
+import type { CatalogRecord, Language, MapRecord } from "./types";
 
 export class CatalogCommandError extends Error {
   constructor(message: string) {
@@ -96,4 +96,11 @@ export function removeMapFromCatalog(
     maps,
     openMapId: nextOpenMapId,
   };
+}
+
+export function setCatalogLanguage(
+  catalog: CatalogRecord,
+  language: Language,
+): CatalogRecord {
+  return { ...catalog, language };
 }

@@ -8,7 +8,8 @@ import {
   type InteractionSnapshot,
 } from "../domain/interaction";
 import { updatePaletteSlot } from "../domain/palette";
-import type { CatalogRecord, ColorSlot, MapRecord } from "../domain/types";
+import { setCatalogLanguage } from "../domain/catalog";
+import type { CatalogRecord, ColorSlot, Language, MapRecord } from "../domain/types";
 import {
   canRedo as historyCanRedo,
   canUndo as historyCanUndo,
@@ -65,6 +66,7 @@ export interface MindiAppController {
   resetWidth: () => void;
   setColorSlot: (slot: ColorSlot) => void;
   updatePalette: (slot: ColorSlot, hex: string) => Promise<void>;
+  setLanguage: (language: Language) => Promise<void>;
   undo: () => void;
   redo: () => void;
   typeCharacter: (value: string) => void;
@@ -321,6 +323,19 @@ export function useMindiApp(
     setState(readyFrom(nextCatalog, interaction, historyRef.current));
   }, []);
 
+  const setLanguage = useCallback(async (language: Language) => {
+    const repository = repositoryRef.current;
+    const catalog = catalogRef.current;
+    const interaction = interactionRef.current;
+    if (!repository || !catalog || !interaction) {
+      return;
+    }
+    const nextCatalog = setCatalogLanguage(catalog, language);
+    await repository.saveCatalog(nextCatalog);
+    catalogRef.current = nextCatalog;
+    setState(readyFrom(nextCatalog, interaction, historyRef.current));
+  }, []);
+
   const undo = useCallback(() => {
     const catalog = catalogRef.current;
     if (!catalog || !historyCanUndo(historyRef.current)) {
@@ -389,6 +404,7 @@ export function useMindiApp(
     resetWidth,
     setColorSlot,
     updatePalette,
+    setLanguage,
     undo,
     redo,
     typeCharacter,

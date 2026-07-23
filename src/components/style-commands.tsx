@@ -15,6 +15,7 @@ import {
 } from "@/domain/resize";
 import type { CatalogRecord, ColorSlot, MapRecord } from "@/domain/types";
 import { DEFAULT_NODE_WIDTH } from "@/domain/types";
+import { useI18n } from "@/i18n/i18n-context";
 
 interface StyleCommandsProps {
   map: MapRecord;
@@ -45,6 +46,7 @@ export function StyleCommands({
   onUndo,
   onRedo,
 }: StyleCommandsProps) {
+  const { t } = useI18n();
   const [resizeOpen, setResizeOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [draftWidth, setDraftWidth] = useState(String(DEFAULT_NODE_WIDTH));
@@ -92,6 +94,7 @@ export function StyleCommands({
     <div
       className="flex flex-wrap items-center gap-2"
       data-testid="style-commands"
+      aria-label={t("styleCommands")}
     >
       <Button
         type="button"
@@ -100,7 +103,7 @@ export function StyleCommands({
         disabled={editing || !focused}
         onClick={() => setResizeOpen(true)}
       >
-        Resize
+        {t("resize")}
       </Button>
       <Button
         type="button"
@@ -109,14 +112,18 @@ export function StyleCommands({
         disabled={editing || !focused}
         onClick={onResetWidth}
       >
-        Reset width
+        {t("resetWidth")}
       </Button>
-      <div className="flex items-center gap-1" role="group" aria-label="Color slot">
+      <div
+        className="flex items-center gap-1"
+        role="group"
+        aria-label={t("colorSlot")}
+      >
         {SLOTS.map((slot) => (
           <button
             key={slot}
             type="button"
-            aria-label={`Color slot ${slot}`}
+            aria-label={t("colorSlotN", { n: slot })}
             aria-pressed={focused?.colorSlot === slot}
             disabled={editing || !focused}
             className="size-6 rounded-sm border border-black/20 disabled:opacity-40"
@@ -131,7 +138,7 @@ export function StyleCommands({
         size="sm"
         onClick={() => setPaletteOpen(true)}
       >
-        Palette
+        {t("palette")}
       </Button>
       <Button
         type="button"
@@ -140,7 +147,7 @@ export function StyleCommands({
         disabled={!canUndo}
         onClick={onUndo}
       >
-        Undo
+        {t("undo")}
       </Button>
       <Button
         type="button"
@@ -149,24 +156,24 @@ export function StyleCommands({
         disabled={!canRedo}
         onClick={onRedo}
       >
-        Redo
+        {t("redo")}
       </Button>
 
       <ResponsiveOverlay
         open={resizeOpen}
         onOpenChange={setResizeOpen}
-        title="Resize Node"
-        description={`Width in pixels (${MIN_NODE_WIDTH}–${MAX_NODE_WIDTH}).`}
+        title={t("resizeNode")}
+        description={`${t("width")} (${MIN_NODE_WIDTH}–${MAX_NODE_WIDTH}).`}
         contentTestId="resize-dialog"
       >
         <label className="flex flex-col gap-2">
-          <span className="text-sm">Width</span>
+          <span className="text-sm">{t("width")}</span>
           <input
             type="number"
             min={MIN_NODE_WIDTH}
             max={MAX_NODE_WIDTH}
             value={draftWidth}
-            aria-label="Node width"
+            aria-label={t("nodeWidth")}
             className="border-input bg-background rounded-md border px-3 py-2"
             onChange={(event) => setDraftWidth(event.target.value)}
           />
@@ -177,10 +184,10 @@ export function StyleCommands({
             variant="secondary"
             onClick={() => setResizeOpen(false)}
           >
-            Cancel
+            {t("cancel")}
           </Button>
           <Button type="button" onClick={commitAccessibleResize}>
-            Apply
+            {t("apply")}
           </Button>
         </div>
       </ResponsiveOverlay>
@@ -188,17 +195,19 @@ export function StyleCommands({
       <ResponsiveOverlay
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
-        title="Palette"
-        description="Edit the global nine Color slots. Changes apply live to every Map."
+        title={t("palette")}
+        description={t("palette")}
         contentTestId="palette-editor"
       >
-        <ul className="flex flex-col gap-3" aria-label="Palette slots">
+        <ul className="flex flex-col gap-3" aria-label={t("paletteSlots")}>
           {SLOTS.map((slot) => (
             <li key={slot} className="flex items-center gap-3">
-              <span className="w-20 text-sm">Color slot {slot}</span>
+              <span className="w-20 text-sm">
+                {t("colorSlotN", { n: slot })}
+              </span>
               <input
                 type="color"
-                aria-label={`Color slot ${slot} hex`}
+                aria-label={t("colorSlotHex", { n: slot })}
                 value={paletteColor(catalog.palette, slot)}
                 onChange={(event) =>
                   onUpdatePalette(slot, event.target.value)

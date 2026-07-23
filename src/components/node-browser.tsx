@@ -14,6 +14,7 @@ import {
 } from "@/domain/interaction";
 import { searchNodes } from "@/domain/node-browser";
 import type { MapRecord } from "@/domain/types";
+import { useI18n } from "@/i18n/i18n-context";
 import { cn } from "@/lib/utils";
 
 interface NodeBrowserProps {
@@ -51,6 +52,7 @@ export function NodeBrowser({
   onFocus,
   onReveal,
 }: NodeBrowserProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -125,17 +127,17 @@ export function NodeBrowser({
     >
       <div className="flex items-center justify-between gap-2">
         <h2 id={labelId} className="text-sm font-semibold">
-          Node browser
+          {t("nodeBrowserHeading")}
         </h2>
       </div>
       <label className="flex flex-col gap-1">
-        <span className="sr-only">Search nodes</span>
+        <span className="sr-only">{t("searchNodes")}</span>
         <input
           ref={searchRef}
           type="search"
           value={query}
-          placeholder="Search…"
-          aria-label="Search nodes"
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchNodes")}
           className="border-input bg-background focus-visible:ring-ring rounded-md border px-2 py-1.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onSearchKeyDown}
@@ -145,18 +147,22 @@ export function NodeBrowser({
       <div
         ref={listRef}
         role="tree"
-        aria-label="Map nodes"
+        aria-label={t("mapNodes")}
         className="min-h-0 flex-1 overflow-auto"
       >
         {result.kind === "empty" ? (
           <p className="text-muted-foreground p-2 text-sm" role="status">
-            No matching nodes
+            {t("noMatchingNodes")}
           </p>
         ) : (
           <ul role="group" className="flex flex-col gap-0.5">
             {result.nodes.map((node) => {
               const isFocused = node.id === focusedId;
               const isActive = navIds[activeIndex] === node.id;
+              const displayLabel =
+                map.nodes[node.id]?.markdown.trim().length === 0
+                  ? t("emptyNode")
+                  : node.label;
               return (
                 <li key={node.id} role="none">
                   <button
@@ -166,14 +172,14 @@ export function NodeBrowser({
                     data-browser-node={node.id}
                     data-testid={`browser-node-${node.id}`}
                     className={cn(
-                      "hover:bg-accent w-full rounded-md px-2 py-1.5 text-left text-sm",
+                      "hover:bg-accent w-full rounded-md px-2 py-1.5 text-start text-sm",
                       isFocused && "ring-ring bg-accent/60 ring-1",
                       isActive && !isFocused && "bg-muted/60",
                     )}
                     style={{ paddingInlineStart: `${0.5 + node.depth * 0.75}rem` }}
                     onClick={() => selectNode(node.id)}
                   >
-                    {highlightLabel(node.label, query)}
+                    {highlightLabel(displayLabel, query)}
                   </button>
                 </li>
               );

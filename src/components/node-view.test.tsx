@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
 
 import { NodeView } from "@/components/node-view";
 import type { InteractionMode } from "@/domain/interaction";
 import type { NodeRecord } from "@/domain/types";
+import { I18nProvider } from "@/i18n/i18n-context";
 
 const node: NodeRecord = {
   id: "n1",
@@ -22,9 +24,13 @@ function editingMode(draft: string): InteractionMode {
   return { kind: "editing", focusedId: "n1", draft };
 }
 
+function renderNode(ui: ReactElement) {
+  return render(<I18nProvider language="en">{ui}</I18nProvider>);
+}
+
 describe("NodeView Markdown and clipboard", () => {
   it("renders safe Markdown while Focused", () => {
-    render(
+    renderNode(
       <NodeView
         node={node}
         mode={focusedMode()}
@@ -47,7 +53,7 @@ describe("NodeView Markdown and clipboard", () => {
   it("pastes normalized plain text and ignores rich clipboard HTML", () => {
     const onDraftChange = vi.fn();
 
-    render(
+    renderNode(
       <NodeView
         node={node}
         mode={editingMode("before")}

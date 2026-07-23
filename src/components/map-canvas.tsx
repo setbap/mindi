@@ -31,6 +31,7 @@ import type { InteractionMode } from "@/domain/interaction";
 import { focusedIdOf, isEditing } from "@/domain/interaction";
 import { paletteColor } from "@/domain/palette";
 import type { CatalogRecord, MapRecord } from "@/domain/types";
+import { useI18n } from "@/i18n/i18n-context";
 import { MAP_CANVAS_FLOW_PROPS } from "@/layout/canvas-flow-props";
 import {
   layoutMap,
@@ -203,6 +204,7 @@ function MapCanvasFlow({
   onEscapeExit,
   canvasRef,
 }: MapCanvasProps & { canvasRef: Ref<MapCanvasHandle> }) {
+  const { t } = useI18n();
   const focusedId = focusedIdOf(mode);
   const editing = isEditing(mode);
   const { fitView, getNode, setCenter, getZoom } = useReactFlow();
@@ -379,7 +381,7 @@ function MapCanvasFlow({
         ref={hostRef}
         role="application"
         tabIndex={0}
-        aria-label="Map canvas"
+        aria-label={t("mapCanvas")}
         aria-activedescendant={`node-${focusedId}`}
         className={cn(
           "bg-background focus-visible:ring-ring relative h-full min-h-0 w-full overflow-hidden rounded-lg border focus-visible:ring-2 focus-visible:outline-none",

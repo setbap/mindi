@@ -2,26 +2,33 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Gruvbox-dark semantic Theme tokens (Palette accents stay separate). */
 :root {
-  --background: oklch(0.23 0.02 67);
-  --foreground: oklch(0.87 0.02 84);
-  --card: oklch(0.27 0.02 67);
-  --card-foreground: oklch(0.87 0.02 84);
-  --popover: oklch(0.27 0.02 67);
-  --popover-foreground: oklch(0.87 0.02 84);
-  --primary: oklch(0.74 0.14 70);
-  --primary-foreground: oklch(0.2 0.02 67);
-  --secondary: oklch(0.34 0.02 67);
-  --secondary-foreground: oklch(0.87 0.02 84);
-  --muted: oklch(0.34 0.02 67);
-  --muted-foreground: oklch(0.68 0.02 84);
-  --accent: oklch(0.34 0.02 67);
-  --accent-foreground: oklch(0.87 0.02 84);
-  --destructive: oklch(0.62 0.2 25);
-  --border: oklch(0.42 0.02 67);
-  --input: oklch(0.42 0.02 67);
-  --ring: oklch(0.74 0.14 70);
+  --background: #282828;
+  --foreground: #ebdbb2;
+  --card: #3c3836;
+  --card-foreground: #ebdbb2;
+  --popover: #3c3836;
+  --popover-foreground: #ebdbb2;
+  --primary: #fabd2f;
+  --primary-foreground: #282828;
+  --secondary: #504945;
+  --secondary-foreground: #ebdbb2;
+  --muted: #504945;
+  --muted-foreground: #a89984;
+  --accent: #504945;
+  --accent-foreground: #ebdbb2;
+  --destructive: #fb4934;
+  --border: #665c54;
+  --input: #665c54;
+  --ring: #fabd2f;
   --radius: 0.5rem;
+  --depth: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 12px rgb(0 0 0 / 0.25);
+
+  --visible-viewport-height: 100dvh;
+  --visible-viewport-offset-top: 0px;
+  --bottom-safe: env(safe-area-inset-bottom, 0px);
+  --bar-gap: 0.5rem;
 }
 
 @theme inline {
@@ -56,6 +63,34 @@
 
   body {
     @apply bg-background text-foreground min-h-screen antialiased;
+  }
+
+  .app-shell {
+    block-size: var(--visible-viewport-height);
+    min-block-size: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    transform: translateY(var(--visible-viewport-offset-top));
+    overflow: hidden;
+  }
+
+  .app-workspace {
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+
+  .bottom-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bar-gap);
+    padding: 0.5rem 0.75rem calc(0.5rem + var(--bottom-safe));
+    border-top: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: var(--depth);
+  }
+
+  .bottom-actions[hidden] {
+    display: none;
   }
 
   @media (prefers-reduced-motion: reduce) {

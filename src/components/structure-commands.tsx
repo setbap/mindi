@@ -2,7 +2,12 @@ import { useState } from "react";
 
 import { ResponsiveOverlay } from "@/components/responsive-overlay";
 import { Button } from "@/components/ui/button";
-import { focusedIdOf, isEditing, type InteractionMode } from "@/domain/interaction";
+import {
+  focusedIdOf,
+  isEditing,
+  type InteractionMode,
+} from "@/domain/interaction";
+import { nodeLabel as domainNodeLabel } from "@/domain/node-browser";
 import {
   canDeleteNode,
   canDetach,
@@ -13,6 +18,7 @@ import {
   eligibleMoveUnderTargets,
 } from "@/domain/structure";
 import type { MapRecord } from "@/domain/types";
+import { useI18n } from "@/i18n/i18n-context";
 
 interface StructureCommandsProps {
   map: MapRecord;
@@ -26,11 +32,6 @@ interface StructureCommandsProps {
   onDelete: () => void;
 }
 
-function nodeLabel(map: MapRecord, nodeId: string): string {
-  const markdown = map.nodes[nodeId]?.markdown.trim() ?? "";
-  return markdown.length > 0 ? markdown : "Empty Node";
-}
-
 export function StructureCommands({
   map,
   mode,
@@ -42,6 +43,7 @@ export function StructureCommands({
   onDetach,
   onDelete,
 }: StructureCommandsProps) {
+  const { t } = useI18n();
   const [moveUnderOpen, setMoveUnderOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -55,6 +57,14 @@ export function StructureCommands({
   const targets = editing ? [] : eligibleMoveUnderTargets(map, focusedId);
   const descendants = descendantCount(map, focusedId);
   const finalNodeBlocked = !canDeleteNode(map, focusedId);
+
+  function labelFor(nodeId: string): string {
+    const markdown = map.nodes[nodeId]?.markdown ?? "";
+    if (markdown.trim().length === 0) {
+      return t("emptyNode");
+    }
+    return domainNodeLabel(markdown);
+  }
 
   function requestDelete() {
     if (!deleteEnabled) {
@@ -76,9 +86,16 @@ export function StructureCommands({
     <div
       className="flex flex-wrap items-center gap-2"
       data-testid="structure-commands"
+      aria-label={t("structureCommands")}
     >
-      <Button type="button" variant="secondary" size="sm" disabled={editing} onClick={onCreateRoot}>
-        Create Root
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={editing}
+        onClick={onCreateRoot}
+      >
+        {t("createRoot")}
       </Button>
       <Button
         type="button"
@@ -87,7 +104,7 @@ export function StructureCommands({
         disabled={!moveUpEnabled}
         onClick={onMoveUp}
       >
-        Move up
+        {t("moveUp")}
       </Button>
       <Button
         type="button"
@@ -96,7 +113,7 @@ export function StructureCommands({
         disabled={!moveDownEnabled}
         onClick={onMoveDown}
       >
-        Move down
+        {t("moveDown")}
       </Button>
       <Button
         type="button"
@@ -105,7 +122,7 @@ export function StructureCommands({
         disabled={targets.length === 0}
         onClick={() => setMoveUnderOpen(true)}
       >
-        Move under
+        {t("moveUnder")}
       </Button>
       <Button
         type="button"
@@ -114,7 +131,7 @@ export function StructureCommands({
         disabled={!swapEnabled}
         onClick={onSwapWithParent}
       >
-        Swap with parent
+        {t("swapWithParent")}
       </Button>
       <Button
         type="button"
@@ -123,7 +140,7 @@ export function StructureCommands({
         disabled={!detachEnabled}
         onClick={onDetach}
       >
-        Detach
+        {t("detach")}
       </Button>
       <Button
         type="button"
@@ -131,28 +148,24 @@ export function StructureCommands({
         size="sm"
         disabled={!deleteEnabled}
         onClick={requestDelete}
-        title={
-          finalNodeBlocked
-            ? "The final Node cannot be deleted. Create another Node first."
-            : undefined
-        }
+        title={finalNodeBlocked ? t("finalNodeCannotDelete") : undefined}
       >
-        Delete
+        {t("delete")}
       </Button>
       {finalNodeBlocked ? (
         <p className="text-muted-foreground text-sm" role="status">
-          The final Node cannot be deleted. Create another Node first.
+          {t("finalNodeCannotDelete")}
         </p>
       ) : null}
 
       <ResponsiveOverlay
         open={moveUnderOpen}
         onOpenChange={setMoveUnderOpen}
-        title="Move under"
-        description="Choose a target Node. The Focused Node becomes its last child."
+        title={t("moveUnderTitle")}
+        description={t("moveUnder")}
         contentTestId="move-under-picker"
       >
-        <ul className="flex flex-col gap-2" aria-label="Move under targets">
+        <ul className="flex flex-col gap-2" aria-label={t("moveUnderTargets")}>
           {targets.map((targetId) => (
             <li key={targetId}>
               <Button
@@ -164,7 +177,7 @@ export function StructureCommands({
                   setMoveUnderOpen(false);
                 }}
               >
-                {nodeLabel(map, targetId)}
+                {labelFor(targetId)}
               </Button>
             </li>
           ))}
@@ -174,8 +187,8 @@ export function StructureCommands({
       <ResponsiveOverlay
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="Delete subtree?"
-        description={`This deletes the Focused Node and ${descendants} descendant${descendants === 1 ? "" : "s"}.`}
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirmBody", { count: descendants })}
         contentTestId="delete-confirm"
       >
         <div className="flex justify-end gap-2">
@@ -184,10 +197,10 @@ export function StructureCommands({
             variant="secondary"
             onClick={() => setDeleteOpen(false)}
           >
-            Cancel
+            {t("cancel")}
           </Button>
           <Button type="button" variant="destructive" onClick={confirmDelete}>
-            Delete
+            {t("delete")}
           </Button>
         </div>
       </ResponsiveOverlay>

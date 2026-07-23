@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { canDeleteMap } from "@/domain/catalog";
 import type { CatalogRecord } from "@/domain/types";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
+import { useI18n } from "@/i18n/i18n-context";
 import { cn } from "@/lib/utils";
 import { ResponsiveOverlay } from "./responsive-overlay";
 
@@ -32,6 +33,7 @@ export function MapManager({
   const inputRef = useRef<HTMLInputElement>(null);
   const deleteAllowed = canDeleteMap(catalog);
   const isDesktop = useIsDesktop();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (renamingId && inputRef.current) {
@@ -93,8 +95,8 @@ export function MapManager({
     <ResponsiveOverlay
       open={open}
       onOpenChange={onOpenChange}
-      title="Maps"
-      description="Create, rename, switch, or delete Maps in the catalog."
+      title={t("maps")}
+      description={t("mapManager")}
       contentTestId={isDesktop ? "map-manager-dialog" : "map-manager-sheet"}
     >
       <div className="flex flex-col gap-4">
@@ -103,10 +105,10 @@ export function MapManager({
           disabled={busy}
           onClick={() => void run(onCreate)}
         >
-          Create Map
+          {t("createMap")}
         </Button>
 
-        <ul className="flex flex-col gap-2" aria-label="Map catalog">
+        <ul className="flex flex-col gap-2" aria-label={t("mapCatalog")}>
           {catalog.maps.map((entry) => {
             const isOpen = entry.id === catalog.openMapId;
             const isRenaming = renamingId === entry.id;
@@ -123,7 +125,7 @@ export function MapManager({
                   {isRenaming ? (
                     <input
                       ref={inputRef}
-                      aria-label={`Rename ${entry.name}`}
+                      aria-label={t("renameMap", { name: entry.name })}
                       className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none"
                       value={draftName}
                       onChange={(event) => setDraftName(event.target.value)}
@@ -134,14 +136,14 @@ export function MapManager({
                   ) : (
                     <button
                       type="button"
-                      className="hover:text-primary flex-1 text-left text-sm font-medium"
+                      className="hover:text-primary flex-1 text-start text-sm font-medium"
                       onClick={() => void switchTo(entry.id)}
                       disabled={busy || isOpen}
                     >
                       {entry.name}
                       {isOpen ? (
-                        <span className="text-muted-foreground ml-2 text-xs">
-                          Open
+                        <span className="text-muted-foreground ms-2 text-xs">
+                          {t("openMap")}
                         </span>
                       ) : null}
                     </button>
@@ -156,7 +158,7 @@ export function MapManager({
                     disabled={busy || isRenaming}
                     onClick={() => startRename(entry.id, entry.name)}
                   >
-                    Rename
+                    {t("rename")}
                   </Button>
                   <Button
                     type="button"
@@ -165,7 +167,7 @@ export function MapManager({
                     disabled={busy || isOpen}
                     onClick={() => void switchTo(entry.id)}
                   >
-                    Switch
+                    {t("switch")}
                   </Button>
                   <Button
                     type="button"
@@ -173,13 +175,11 @@ export function MapManager({
                     variant="outline"
                     disabled={busy || !deleteAllowed}
                     title={
-                      deleteAllowed
-                        ? "Delete this Map"
-                        : "The final Map cannot be deleted. Create another Map first."
+                      deleteAllowed ? t("delete") : t("finalMapCannotDelete")
                     }
                     onClick={() => void run(() => onDelete(entry.id))}
                   >
-                    Delete
+                    {t("delete")}
                   </Button>
                 </div>
               </li>
@@ -189,7 +189,7 @@ export function MapManager({
 
         {!deleteAllowed ? (
           <p className="text-muted-foreground text-sm">
-            The final Map cannot be deleted. Create another Map first.
+            {t("finalMapCannotDelete")}
           </p>
         ) : null}
       </div>
