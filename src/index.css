@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Gruvbox-dark semantic Theme tokens (Palette accents stay separate). */
+:root {
+  --background: #282828;
+  --foreground: #ebdbb2;
+  --card: #3c3836;
+  --card-foreground: #ebdbb2;
+  --popover: #3c3836;
+  --popover-foreground: #ebdbb2;
+  --primary: #fabd2f;
+  --primary-foreground: #282828;
+  --secondary: #504945;
+  --secondary-foreground: #ebdbb2;
+  --muted: #504945;
+  --muted-foreground: #a89984;
+  --accent: #504945;
+  --accent-foreground: #ebdbb2;
+  --destructive: #fb4934;
+  --border: #665c54;
+  --input: #665c54;
+  --ring: #fabd2f;
+  --radius: 0.5rem;
+  --depth: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 12px rgb(0 0 0 / 0.25);
+
+  --visible-viewport-height: 100dvh;
+  --visible-viewport-offset-top: 0px;
+  --bottom-safe: env(safe-area-inset-bottom, 0px);
+  --bar-gap: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground min-h-screen antialiased;
+  }
+
+  .app-shell {
+    block-size: var(--visible-viewport-height);
+    min-block-size: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    transform: translateY(var(--visible-viewport-offset-top));
+    overflow: hidden;
+  }
+
+  .app-workspace {
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+
+  .bottom-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bar-gap);
+    padding: 0.5rem 0.75rem calc(0.5rem + var(--bottom-safe));
+    border-top: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: var(--depth);
+  }
+
+  .bottom-actions[hidden] {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
