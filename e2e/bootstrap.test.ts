@@ -6,7 +6,7 @@ test("first launch creates a persisted Untitled Map", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Untitled Map" }),
   ).toBeVisible();
-  await expect(page.getByTestId("map-forest")).toBeVisible();
+  await expect(page.getByTestId("map-canvas")).toBeVisible();
   await expect(page.getByText("Start typing…")).toBeVisible();
 
   const openMapName = await page

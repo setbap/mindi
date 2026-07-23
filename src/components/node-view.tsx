@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 
 interface NodeViewProps {
   node: NodeRecord;
-  depth: number;
   mode: InteractionMode;
   onFocus: (nodeId: string) => void;
   onStartEditing: (nodeId: string) => void;
@@ -17,7 +16,6 @@ interface NodeViewProps {
 
 export function NodeView({
   node,
-  depth,
   mode,
   onFocus,
   onStartEditing,
@@ -67,58 +65,51 @@ export function NodeView({
 
   return (
     <div
-      className="flex flex-col gap-2"
-      style={{ marginInlineStart: `${depth * 1.25}rem` }}
+      id={`node-${node.id}`}
+      aria-label={label}
+      data-testid={`node-${node.id}`}
+      className={cn(
+        "bg-card text-card-foreground nodrag nopan rounded-md border p-3 outline-none",
+        isFocused && "ring-ring border-ring ring-2",
+      )}
+      onClick={(event) => {
+        event.stopPropagation();
+        onFocus(node.id);
+      }}
     >
-      <div
-        id={`node-${node.id}`}
-        role="treeitem"
-        aria-selected={isFocused}
-        aria-label={label}
-        data-testid={`node-${node.id}`}
-        className={cn(
-          "bg-card text-card-foreground rounded-md border p-3 outline-none",
-          isFocused && "ring-ring border-ring ring-2",
-        )}
-        onClick={(event) => {
-          event.stopPropagation();
-          onFocus(node.id);
-        }}
-      >
-        {isEditing ? (
-          <label className="flex flex-col gap-1">
-            <span className="sr-only">Edit node markdown</span>
-            <textarea
-              ref={textareaRef}
-              aria-label="Node markdown"
-              className="border-input bg-background focus-visible:ring-ring min-h-24 w-full rounded-md border p-2 font-mono text-sm focus-visible:ring-2 focus-visible:outline-none"
-              value={mode.draft}
-              dir="auto"
-              onChange={(event) => onDraftChange(event.target.value)}
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={onEditorKeyDown}
-            />
-          </label>
-        ) : (
-          <p
-            className={cn(
-              "min-h-6 text-sm whitespace-pre-wrap",
-              node.markdown === "" && "text-muted-foreground italic",
-            )}
+      {isEditing ? (
+        <label className="flex flex-col gap-1">
+          <span className="sr-only">Edit node markdown</span>
+          <textarea
+            ref={textareaRef}
+            aria-label="Node markdown"
+            className="border-input bg-background focus-visible:ring-ring nodrag nopan nowheel min-h-24 w-full rounded-md border p-2 font-mono text-sm focus-visible:ring-2 focus-visible:outline-none"
+            value={mode.draft}
             dir="auto"
-            onClick={(event) => {
-              event.stopPropagation();
-              if (isFocused) {
-                onStartEditing(node.id);
-                return;
-              }
-              onFocus(node.id);
-            }}
-          >
-            {node.markdown === "" ? "Start typing…" : node.markdown}
-          </p>
-        )}
-      </div>
+            onChange={(event) => onDraftChange(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={onEditorKeyDown}
+          />
+        </label>
+      ) : (
+        <p
+          className={cn(
+            "min-h-6 text-sm whitespace-pre-wrap",
+            node.markdown === "" && "text-muted-foreground italic",
+          )}
+          dir="auto"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (isFocused) {
+              onStartEditing(node.id);
+              return;
+            }
+            onFocus(node.id);
+          }}
+        >
+          {node.markdown === "" ? "Start typing…" : node.markdown}
+        </p>
+      )}
     </div>
   );
 }

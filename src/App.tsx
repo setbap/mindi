@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { MapForest } from "@/components/map-forest";
+import { MapCanvas } from "@/components/map-canvas";
 import { MapManager } from "@/components/map-manager";
 import { Button } from "@/components/ui/button";
 import { useMindiApp } from "./app/use-mindi-app";
@@ -43,8 +43,8 @@ export function App() {
   const { catalog, openMap, mode } = state;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-6">
-      <header className="flex items-center justify-between gap-4">
+    <main className="flex h-screen flex-col gap-4 p-4 md:p-6">
+      <header className="mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between gap-4">
         <div>
           <p className="text-muted-foreground text-sm">Mindi</p>
           <h1 className="text-2xl font-semibold">{openMap.name}</h1>
@@ -58,19 +58,21 @@ export function App() {
         </Button>
       </header>
 
-      <MapForest
-        map={openMap}
-        mode={mode}
-        onFocus={focusNode}
-        onStartEditing={startEditing}
-        onDraftChange={setDraft}
-        onCommit={commitEdit}
-        onCancel={cancelEdit}
-        onCreateSibling={createSibling}
-        onCreateChild={createChild}
-        onTypeCharacter={typeCharacter}
-        onArrow={arrow}
-      />
+      <div className="mx-auto min-h-0 w-full max-w-6xl flex-1">
+        <MapCanvas
+          map={openMap}
+          mode={mode}
+          onFocus={focusNode}
+          onStartEditing={startEditing}
+          onDraftChange={setDraft}
+          onCommit={commitEdit}
+          onCancel={cancelEdit}
+          onCreateSibling={createSibling}
+          onCreateChild={createChild}
+          onTypeCharacter={typeCharacter}
+          onArrow={arrow}
+        />
+      </div>
 
       <MapManager
         open={managerOpen}

@@ -128,8 +128,8 @@ describe("App Focused and Editing", () => {
     const rootId = first.rootIds[0];
     expect(createInitialInteraction(first).mode.focusedId).toBe(rootId);
 
-    const forest = screen.getByTestId("map-forest");
-    forest.focus();
+    const canvas = screen.getByTestId("map-canvas");
+    canvas.focus();
     await user.keyboard("H");
 
     const editor = await screen.findByLabelText("Node markdown");
@@ -152,22 +152,22 @@ describe("App Focused and Editing", () => {
     );
 
     render(<App />);
-    await waitFor(() => screen.getByTestId("map-forest"));
+    await waitFor(() => screen.getByTestId("map-canvas"));
 
-    const forest = screen.getByTestId("map-forest");
-    forest.focus();
+    const canvas = screen.getByTestId("map-canvas");
+    canvas.focus();
     await user.keyboard("{Enter}");
 
     await waitFor(() => {
-      expect(screen.getAllByRole("treeitem")).toHaveLength(2);
+      expect(screen.getAllByTestId(/^node-/)).toHaveLength(2);
     });
 
     await user.keyboard("{Escape}");
-    forest.focus();
+    canvas.focus();
     await user.keyboard("{Tab}");
 
     await waitFor(() => {
-      expect(screen.getAllByRole("treeitem").length).toBeGreaterThanOrEqual(3);
+      expect(screen.getAllByTestId(/^node-/).length).toBeGreaterThanOrEqual(3);
     });
   });
 });

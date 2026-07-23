@@ -21,13 +21,13 @@ test("Enter creates sibling and Escape cancels Editing draft", async ({
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.goto("/");
 
-  const forest = page.getByTestId("map-forest");
-  await forest.focus();
+  const canvas = page.getByTestId("map-canvas");
+  await canvas.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByLabel("Node markdown")).toBeVisible();
   await page.keyboard.type("Sibling");
   await page.keyboard.press("Escape");
   await expect(page.getByLabel("Node markdown")).toHaveCount(0);
-  await expect(page.getByRole("treeitem")).toHaveCount(2);
+  await expect(page.locator("[data-testid^='node-']")).toHaveCount(2);
   await expect(page.getByText("Start typing…").first()).toBeVisible();
 });
