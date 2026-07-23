@@ -151,9 +151,10 @@ describe("App Focused and Editing", () => {
       const saved = vi.mocked(repository.saveMap).mock.calls.at(-1)?.[0];
       expect(saved?.nodes[rootId].markdown).toBe("Hello");
     });
-    expect(
-      within(screen.getByTestId("map-canvas")).getByText("Hello"),
-    ).toBeInTheDocument();
+    const markdown = within(screen.getByTestId("map-canvas")).getByTestId(
+      "safe-markdown",
+    );
+    expect(within(markdown).getByText("Hello")).toBeInTheDocument();
   });
 
   it("Enter creates a sibling and Tab creates a child while Focused", async () => {
@@ -338,7 +339,7 @@ describe("App Node browser", () => {
 
     expect(screen.getByTestId("map-canvas")).toHaveAttribute(
       "aria-activedescendant",
-      `node-${first.rootIds[0]}`,
+      `canvas-active-${first.rootIds[0]}`,
     );
 
     await user.clear(search);

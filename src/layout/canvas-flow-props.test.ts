@@ -15,5 +15,6 @@ describe("MAP_CANVAS_FLOW_PROPS", () => {
     expect(MAP_CANVAS_FLOW_PROPS.disableKeyboardA11y).toBe(true);
     expect(MAP_CANVAS_FLOW_PROPS.panOnDrag).toBe(true);
     expect(MAP_CANVAS_FLOW_PROPS.zoomOnScroll).toBe(true);
+    expect(MAP_CANVAS_FLOW_PROPS.onlyRenderVisibleElements).toBe(true);
   });
 });
