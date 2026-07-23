@@ -1,7 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import { DEFAULT_PALETTE } from "./domain/types";
+import {
+  DEFAULT_PALETTE,
+  type CatalogRecord,
+  type MapRecord,
+} from "./domain/types";
+import type { MapRepository } from "./persistence/map-repository-port";
 
 vi.mock("./persistence/indexed-db-map-repository", () => ({
   createMapRepository: vi.fn(),
@@ -9,42 +15,105 @@ vi.mock("./persistence/indexed-db-map-repository", () => ({
 
 import { createMapRepository } from "./persistence/indexed-db-map-repository";
 
-describe("App bootstrap", () => {
-  beforeEach(() => {
-    vi.mocked(createMapRepository).mockReset();
+function untitledMap(id: string, name = "Untitled Map"): MapRecord {
+  return {
+    id,
+    name,
+    rootIds: [`root-${id}`],
+    nodes: {
+      [`root-${id}`]: {
+        id: `root-${id}`,
+        markdown: "",
+        width: 280,
+        colorSlot: 1,
+        parentId: null,
+        childIds: [],
+      },
+    },
+  };
+}
+
+function catalogFor(maps: MapRecord[], openMapId: string): CatalogRecord {
+  return {
+    schemaVersion: 1,
+    maps: maps.map((map) => ({ id: map.id, name: map.name })),
+    openMapId,
+    palette: [...DEFAULT_PALETTE],
+    language: "en",
+  };
+}
+
+function mockRepository(
+  initialMaps: MapRecord[],
+  openId: string,
+): MapRepository {
+  let maps = [...initialMaps];
+  let openMapId = openId;
+
+  const snapshot = () => ({
+    catalog: catalogFor(maps, openMapId),
+    openMap: maps.find((map) => map.id === openMapId)!,
   });
 
-  it("shows the persisted Untitled Map after bootstrap", async () => {
-    vi.mocked(createMapRepository).mockReturnValue({
-      initialize: vi.fn().mockResolvedValue({
-        catalog: {
-          schemaVersion: 1,
-          maps: [{ id: "map-1", name: "Untitled Map" }],
-          openMapId: "map-1",
-          palette: [...DEFAULT_PALETTE],
-          language: "en",
-        },
-        openMap: {
-          id: "map-1",
-          name: "Untitled Map",
-          rootIds: ["root-1"],
-          nodes: {
-            "root-1": {
-              id: "root-1",
-              markdown: "",
-              width: 280,
-              colorSlot: 1,
-              parentId: null,
-              childIds: [],
-            },
-          },
-        },
-      }),
-      getCatalog: vi.fn(),
-      loadMap: vi.fn(),
-      saveMap: vi.fn(),
-      saveCatalog: vi.fn(),
-    });
+  return {
+    initialize: vi.fn(async () => snapshot()),
+    getCatalog: vi.fn(async () => snapshot().catalog),
+    loadMap: vi.fn(async (id) => maps.find((map) => map.id === id) ?? null),
+    saveMap: vi.fn(),
+    saveCatalog: vi.fn(),
+    createMap: vi.fn(async () => {
+      const created = untitledMap(`map-${maps.length + 1}`);
+      maps = [...maps, created];
+      openMapId = created.id;
+      return snapshot();
+    }),
+    renameMap: vi.fn(async (mapId, name) => {
+      maps = maps.map((map) =>
+        map.id === mapId ? { ...map, name: name.trim() } : map,
+      );
+      return snapshot().catalog;
+    }),
+    switchMap: vi.fn(async (mapId) => {
+      openMapId = mapId;
+      return snapshot();
+    }),
+    deleteMap: vi.fn(async (mapId) => {
+      if (maps.length <= 1) {
+        throw new Error(
+          "The final Map cannot be deleted. Create another Map first.",
+        );
+      }
+      const index = maps.findIndex((map) => map.id === mapId);
+      maps = maps.filter((map) => map.id !== mapId);
+      if (openMapId === mapId) {
+        openMapId = maps[Math.min(index, maps.length - 1)].id;
+      }
+      return snapshot();
+    }),
+  };
+}
+
+describe("App Map manager", () => {
+  beforeEach(() => {
+    vi.mocked(createMapRepository).mockReset();
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("min-width: 768px"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
+
+  it("creates, renames, switches, and blocks deleting the final Map", async () => {
+    const user = userEvent.setup();
+    const first = untitledMap("map-1");
+    vi.mocked(createMapRepository).mockReturnValue(
+      mockRepository([first], "map-1"),
+    );
 
     render(<App />);
 
@@ -54,10 +123,62 @@ describe("App bootstrap", () => {
       ).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Empty")).toBeInTheDocument();
-    expect(screen.getByText("map-1")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Maps" }));
+    expect(screen.getByTestId("map-manager-dialog")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Create Map" }));
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole("list", { name: "Map catalog" })).getAllByRole(
+          "listitem",
+        ),
+      ).toHaveLength(2);
+    });
+
+    const catalog = screen.getByRole("list", { name: "Map catalog" });
+    const rows = within(catalog).getAllByRole("listitem");
+    await user.click(within(rows[1]).getByRole("button", { name: "Rename" }));
+    const renameInput = screen.getByLabelText(/Rename Untitled Map/i);
+    await user.clear(renameInput);
+    await user.type(renameInput, "Notes");
+    await user.keyboard("{Enter}");
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Notes" }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Maps" }));
+    const catalogAgain = screen.getByRole("list", { name: "Map catalog" });
+    const firstRow = within(catalogAgain).getAllByRole("listitem")[0];
+    await user.click(within(firstRow).getByRole("button", { name: "Switch" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Untitled Map" }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Maps" }));
+    const openManager = screen.getByRole("list", { name: "Map catalog" });
+    const notesRow = within(openManager).getAllByRole("listitem")[1];
+    await user.click(within(notesRow).getByRole("button", { name: "Delete" }));
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      const summary = screen.getByRole("region", { name: "Open Map summary" });
+      const row = within(summary).getByText("Catalog Maps").closest("div");
+      expect(
+        within(row as HTMLElement).getByRole("definition"),
+      ).toHaveTextContent("1");
+    });
+
+    await user.click(screen.getByRole("button", { name: "Maps" }));
     expect(
-      screen.getByRole("region", { name: "Open Map summary" }),
+      screen.getByText(/The final Map cannot be deleted/i),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
   });
 });

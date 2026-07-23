@@ -1,5 +1,11 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import {
+  appendCreatedMap,
+  removeMapFromCatalog,
+  renameCatalogMap,
+  switchOpenMap,
+} from "../domain/catalog";
+import {
   assertNonEmptyCatalog,
   assertNonEmptyMap,
   createInitialCatalog,
@@ -127,6 +133,104 @@ export class IndexedDbMapRepository implements MapRepository {
     }
     const db = await this.openDb();
     await db.put("catalog", catalog, "singleton");
+  }
+
+  async createMap(): Promise<{ catalog: CatalogRecord; openMap: MapRecord }> {
+    const db = await this.openDb();
+    const current = await db.get("catalog", "singleton");
+    if (!current) {
+      throw new Error("Catalog has not been initialized.");
+    }
+
+    const openMap = createUntitledMap();
+    const catalog = appendCreatedMap(current, openMap);
+    assertNonEmptyMap(openMap);
+    assertNonEmptyCatalog(catalog);
+
+    const tx = db.transaction(["catalog", "maps"], "readwrite");
+    await tx.objectStore("catalog").put(catalog, "singleton");
+    await tx.objectStore("maps").put(openMap, openMap.id);
+    await tx.done;
+
+    return { catalog, openMap };
+  }
+
+  async renameMap(mapId: string, name: string): Promise<CatalogRecord> {
+    const db = await this.openDb();
+    const current = await db.get("catalog", "singleton");
+    if (!current) {
+      throw new Error("Catalog has not been initialized.");
+    }
+
+    const catalog = renameCatalogMap(current, mapId, name);
+    const map = await db.get("maps", mapId);
+    if (!map) {
+      throw new Error(`Map ${mapId} is missing from persistence.`);
+    }
+
+    const renamedMap: MapRecord = { ...map, name: name.trim() };
+    assertNonEmptyMap(renamedMap);
+    assertNonEmptyCatalog(catalog);
+
+    const tx = db.transaction(["catalog", "maps"], "readwrite");
+    await tx.objectStore("catalog").put(catalog, "singleton");
+    await tx.objectStore("maps").put(renamedMap, renamedMap.id);
+    await tx.done;
+
+    return catalog;
+  }
+
+  async switchMap(
+    mapId: string,
+  ): Promise<{ catalog: CatalogRecord; openMap: MapRecord }> {
+    const db = await this.openDb();
+    const current = await db.get("catalog", "singleton");
+    if (!current) {
+      throw new Error("Catalog has not been initialized.");
+    }
+
+    const catalog = switchOpenMap(current, mapId);
+    const openMap = await db.get("maps", mapId);
+    if (!openMap) {
+      throw new Error(`Map ${mapId} is missing from persistence.`);
+    }
+
+    assertNonEmptyMap(openMap);
+    assertNonEmptyCatalog(catalog);
+    await db.put("catalog", catalog, "singleton");
+
+    return { catalog, openMap };
+  }
+
+  async deleteMap(
+    mapId: string,
+  ): Promise<{ catalog: CatalogRecord; openMap: MapRecord }> {
+    const db = await this.openDb();
+    const current = await db.get("catalog", "singleton");
+    if (!current) {
+      throw new Error("Catalog has not been initialized.");
+    }
+
+    const catalog = removeMapFromCatalog(current, mapId);
+    const openMapId = catalog.openMapId;
+    if (!openMapId) {
+      throw new Error("Catalog is missing an Open Map ID after delete.");
+    }
+
+    const openMap = await db.get("maps", openMapId);
+    if (!openMap) {
+      throw new Error(`Open Map ${openMapId} is missing from persistence.`);
+    }
+
+    assertNonEmptyMap(openMap);
+    assertNonEmptyCatalog(catalog);
+
+    const tx = db.transaction(["catalog", "maps"], "readwrite");
+    await tx.objectStore("catalog").put(catalog, "singleton");
+    await tx.objectStore("maps").delete(mapId);
+    await tx.done;
+
+    return { catalog, openMap };
   }
 }
 

@@ -45,4 +45,39 @@ describe("IndexedDbMapRepository", () => {
 
     expect(loaded).toEqual(openMap);
   });
+
+  it("creates, renames, switches, and deletes Maps with persistence", async () => {
+    const repository = new IndexedDbMapRepository();
+    const first = await repository.initialize();
+
+    const created = await repository.createMap();
+    expect(created.catalog.maps).toHaveLength(2);
+    expect(created.openMap.name).toBe("Untitled Map");
+    expect(created.catalog.openMapId).toBe(created.openMap.id);
+
+    const renamedCatalog = await repository.renameMap(
+      created.openMap.id,
+      "Notes",
+    );
+    expect(
+      renamedCatalog.maps.find((m) => m.id === created.openMap.id)?.name,
+    ).toBe("Notes");
+
+    const switched = await repository.switchMap(first.openMap.id);
+    expect(switched.openMap.id).toBe(first.openMap.id);
+    expect(switched.catalog.openMapId).toBe(first.openMap.id);
+
+    const afterDelete = await repository.deleteMap(first.openMap.id);
+    expect(afterDelete.catalog.maps).toHaveLength(1);
+    expect(afterDelete.openMap.id).toBe(created.openMap.id);
+    expect(afterDelete.openMap.name).toBe("Notes");
+
+    await expect(repository.deleteMap(created.openMap.id)).rejects.toThrow(
+      /final Map cannot be deleted/i,
+    );
+
+    const reopened = await new IndexedDbMapRepository().initialize();
+    expect(reopened.catalog.maps).toHaveLength(1);
+    expect(reopened.openMap.name).toBe("Notes");
+  });
 });
