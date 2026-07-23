@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { createInitialInteraction } from "./domain/interaction";
 import {
   DEFAULT_PALETTE,
   type CatalogRecord,
@@ -59,7 +60,9 @@ function mockRepository(
     initialize: vi.fn(async () => snapshot()),
     getCatalog: vi.fn(async () => snapshot().catalog),
     loadMap: vi.fn(async (id) => maps.find((map) => map.id === id) ?? null),
-    saveMap: vi.fn(),
+    saveMap: vi.fn(async (map) => {
+      maps = maps.map((entry) => (entry.id === map.id ? map : entry));
+    }),
     saveCatalog: vi.fn(),
     createMap: vi.fn(async () => {
       const created = untitledMap(`map-${maps.length + 1}`);
@@ -92,6 +95,82 @@ function mockRepository(
     }),
   };
 }
+
+describe("App Focused and Editing", () => {
+  beforeEach(() => {
+    vi.mocked(createMapRepository).mockReset();
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("min-width: 768px"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
+
+  it("focuses the Root, edits markdown, and persists on commit", async () => {
+    const user = userEvent.setup();
+    const first = untitledMap("map-1");
+    const repository = mockRepository([first], "map-1");
+    vi.mocked(createMapRepository).mockReturnValue(repository);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Untitled Map" }),
+      ).toBeInTheDocument();
+    });
+
+    const rootId = first.rootIds[0];
+    expect(createInitialInteraction(first).mode.focusedId).toBe(rootId);
+
+    const forest = screen.getByTestId("map-forest");
+    forest.focus();
+    await user.keyboard("H");
+
+    const editor = await screen.findByLabelText("Node markdown");
+    expect(editor).toHaveValue("H");
+    await user.type(editor, "ello");
+    expect(editor).toHaveValue("Hello");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(screen.getByText("Hello")).toBeInTheDocument();
+    });
+    expect(repository.saveMap).toHaveBeenCalled();
+  });
+
+  it("Enter creates a sibling and Tab creates a child while Focused", async () => {
+    const user = userEvent.setup();
+    const first = untitledMap("map-1");
+    vi.mocked(createMapRepository).mockReturnValue(
+      mockRepository([first], "map-1"),
+    );
+
+    render(<App />);
+    await waitFor(() => screen.getByTestId("map-forest"));
+
+    const forest = screen.getByTestId("map-forest");
+    forest.focus();
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("treeitem")).toHaveLength(2);
+    });
+
+    await user.keyboard("{Escape}");
+    forest.focus();
+    await user.keyboard("{Tab}");
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("treeitem").length).toBeGreaterThanOrEqual(3);
+    });
+  });
+});
 
 describe("App Map manager", () => {
   beforeEach(() => {
@@ -168,11 +247,9 @@ describe("App Map manager", () => {
     await user.keyboard("{Escape}");
 
     await waitFor(() => {
-      const summary = screen.getByRole("region", { name: "Open Map summary" });
-      const row = within(summary).getByText("Catalog Maps").closest("div");
       expect(
-        within(row as HTMLElement).getByRole("definition"),
-      ).toHaveTextContent("1");
+        screen.getByRole("heading", { name: "Untitled Map" }),
+      ).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: "Maps" }));

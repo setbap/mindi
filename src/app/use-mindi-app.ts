@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createInitialInteraction,
+  reduceInteraction,
+  type InteractionAction,
+  type InteractionMode,
+  type InteractionSnapshot,
+} from "../domain/interaction";
 import type { CatalogRecord, MapRecord } from "../domain/types";
 import { createMapRepository } from "../persistence/indexed-db-map-repository";
 import type { MapRepository } from "../persistence/map-repository-port";
@@ -7,6 +14,7 @@ interface ReadyState {
   status: "ready";
   catalog: CatalogRecord;
   openMap: MapRecord;
+  mode: InteractionMode;
 }
 
 interface LoadingState {
@@ -26,6 +34,27 @@ export interface MindiAppController {
   renameMap: (mapId: string, name: string) => Promise<void>;
   switchMap: (mapId: string) => Promise<void>;
   deleteMap: (mapId: string) => Promise<void>;
+  focusNode: (nodeId: string) => void;
+  startEditing: (nodeId: string) => void;
+  setDraft: (value: string) => void;
+  commitEdit: () => void;
+  cancelEdit: () => void;
+  createSibling: () => void;
+  createChild: () => void;
+  typeCharacter: (value: string) => void;
+  arrow: (direction: "up" | "down" | "left" | "right") => void;
+}
+
+function readyFrom(
+  catalog: CatalogRecord,
+  interaction: InteractionSnapshot,
+): ReadyState {
+  return {
+    status: "ready",
+    catalog,
+    openMap: interaction.map,
+    mode: interaction.mode,
+  };
 }
 
 export function useMindiApp(
@@ -33,6 +62,32 @@ export function useMindiApp(
 ): MindiAppController {
   const [state, setState] = useState<AppState>({ status: "loading" });
   const repositoryRef = useRef<MapRepository | null>(null);
+  const interactionRef = useRef<InteractionSnapshot | null>(null);
+  const catalogRef = useRef<CatalogRecord | null>(null);
+
+  const commitInteraction = useCallback(async (next: InteractionSnapshot) => {
+    interactionRef.current = next;
+    if (next.dirty) {
+      await repositoryRef.current?.saveMap(next.map);
+    }
+    const catalog = catalogRef.current;
+    if (!catalog) {
+      return;
+    }
+    setState(readyFrom(catalog, next));
+  }, []);
+
+  const dispatch = useCallback(
+    (action: InteractionAction) => {
+      const current = interactionRef.current;
+      const catalog = catalogRef.current;
+      if (!current || !catalog) {
+        return;
+      }
+      void commitInteraction(reduceInteraction(current, action));
+    },
+    [commitInteraction],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +98,10 @@ export function useMindiApp(
       try {
         const { catalog, openMap } = await repository.initialize();
         if (!cancelled) {
-          setState({ status: "ready", catalog, openMap });
+          const interaction = createInitialInteraction(openMap);
+          catalogRef.current = catalog;
+          interactionRef.current = interaction;
+          setState(readyFrom(catalog, interaction));
         }
       } catch (error) {
         if (!cancelled) {
@@ -68,7 +126,10 @@ export function useMindiApp(
       return;
     }
     const { catalog, openMap } = await repository.createMap();
-    setState({ status: "ready", catalog, openMap });
+    const interaction = createInitialInteraction(openMap);
+    catalogRef.current = catalog;
+    interactionRef.current = interaction;
+    setState(readyFrom(catalog, interaction));
   }, []);
 
   const renameMap = useCallback(async (mapId: string, name: string) => {
@@ -77,6 +138,7 @@ export function useMindiApp(
       return;
     }
     const catalog = await repository.renameMap(mapId, name);
+    catalogRef.current = catalog;
     setState((prev) => {
       if (prev.status !== "ready") {
         return prev;
@@ -88,7 +150,13 @@ export function useMindiApp(
         prev.openMap.id === mapId && renamedName
           ? { ...prev.openMap, name: renamedName }
           : prev.openMap;
-      return { status: "ready", catalog, openMap };
+      if (interactionRef.current && openMap.id === prev.openMap.id) {
+        interactionRef.current = {
+          ...interactionRef.current,
+          map: openMap,
+        };
+      }
+      return { ...prev, catalog, openMap };
     });
   }, []);
 
@@ -98,7 +166,10 @@ export function useMindiApp(
       return;
     }
     const { catalog, openMap } = await repository.switchMap(mapId);
-    setState({ status: "ready", catalog, openMap });
+    const interaction = createInitialInteraction(openMap);
+    catalogRef.current = catalog;
+    interactionRef.current = interaction;
+    setState(readyFrom(catalog, interaction));
   }, []);
 
   const deleteMap = useCallback(async (mapId: string) => {
@@ -107,8 +178,78 @@ export function useMindiApp(
       return;
     }
     const { catalog, openMap } = await repository.deleteMap(mapId);
-    setState({ status: "ready", catalog, openMap });
+    const interaction = createInitialInteraction(openMap);
+    catalogRef.current = catalog;
+    interactionRef.current = interaction;
+    setState(readyFrom(catalog, interaction));
   }, []);
 
-  return { state, createMap, renameMap, switchMap, deleteMap };
+  const focusNode = useCallback(
+    (nodeId: string) => dispatch({ type: "focus", nodeId }),
+    [dispatch],
+  );
+
+  const startEditing = useCallback(
+    (nodeId: string) => {
+      const current = interactionRef.current;
+      const catalog = catalogRef.current;
+      if (!current || !catalog) {
+        return;
+      }
+      let next = current;
+      if (next.mode.focusedId !== nodeId) {
+        next = reduceInteraction(next, { type: "focus", nodeId });
+      }
+      next = reduceInteraction(next, { type: "startEditing" });
+      void commitInteraction(next);
+    },
+    [commitInteraction],
+  );
+
+  const setDraft = useCallback(
+    (value: string) => dispatch({ type: "setDraft", value }),
+    [dispatch],
+  );
+  const commitEdit = useCallback(
+    () => dispatch({ type: "commit" }),
+    [dispatch],
+  );
+  const cancelEdit = useCallback(
+    () => dispatch({ type: "cancel" }),
+    [dispatch],
+  );
+  const createSibling = useCallback(
+    () => dispatch({ type: "createSibling" }),
+    [dispatch],
+  );
+  const createChild = useCallback(
+    () => dispatch({ type: "createChild" }),
+    [dispatch],
+  );
+  const typeCharacter = useCallback(
+    (value: string) => dispatch({ type: "typeCharacter", value }),
+    [dispatch],
+  );
+  const arrow = useCallback(
+    (direction: "up" | "down" | "left" | "right") =>
+      dispatch({ type: "arrow", direction }),
+    [dispatch],
+  );
+
+  return {
+    state,
+    createMap,
+    renameMap,
+    switchMap,
+    deleteMap,
+    focusNode,
+    startEditing,
+    setDraft,
+    commitEdit,
+    cancelEdit,
+    createSibling,
+    createChild,
+    typeCharacter,
+    arrow,
+  };
 }
