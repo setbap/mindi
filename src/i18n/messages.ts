@@ -58,7 +58,16 @@ export type MessageKey =
   | "openMap"
   | "mapNodes"
   | "paletteSlots"
-  | "searchPlaceholder";
+  | "searchPlaceholder"
+  | "exportMap"
+  | "exportAllMaps"
+  | "importMaps"
+  | "importSelected"
+  | "importInvalidMaps"
+  | "selectImportMaps"
+  | "importFailed"
+  | "selectAtLeastOneMap"
+  | "restorePalette";
 
 type Messages = Record<MessageKey, string>;
 
@@ -124,6 +133,15 @@ const en: Messages = {
   mapNodes: "Map nodes",
   paletteSlots: "Palette slots",
   searchPlaceholder: "Search…",
+  exportMap: "Export Map",
+  exportAllMaps: "Export all Maps",
+  importMaps: "Import Maps",
+  importSelected: "Import selected",
+  importInvalidMaps: "Invalid Maps",
+  selectImportMaps: "Select Maps to import",
+  importFailed: "Import failed",
+  selectAtLeastOneMap: "Select at least one valid Map to import.",
+  restorePalette: "Replace the current Palette with the file snapshot",
 };
 
 const fa: Messages = {
@@ -188,6 +206,15 @@ const fa: Messages = {
   mapNodes: "گره‌های نقشه",
   paletteSlots: "اسلات‌های پالت",
   searchPlaceholder: "جستجو…",
+  exportMap: "برون‌بری نقشه",
+  exportAllMaps: "برون‌بری همهٔ نقشه‌ها",
+  importMaps: "درون‌ریزی نقشه‌ها",
+  importSelected: "درون‌ریزی انتخاب‌شده‌ها",
+  importInvalidMaps: "نقشه‌های نامعتبر",
+  selectImportMaps: "نقشه‌های درون‌ریزی را انتخاب کنید",
+  importFailed: "درون‌ریزی ناموفق بود",
+  selectAtLeastOneMap: "دست‌کم یک نقشهٔ معتبر را برای درون‌ریزی انتخاب کنید.",
+  restorePalette: "پالت کنونی را با تصویر پالتِ فایل جایگزین کن",
 };
 
 const tables: Record<Language, Messages> = { en, fa };

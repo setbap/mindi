@@ -97,6 +97,10 @@ function mockRepository(
       }
       return snapshot();
     }),
+    importMaps: vi.fn(async (importedMaps) => {
+      maps = [...maps, ...importedMaps];
+      return snapshot().catalog;
+    }),
   };
 }
 
@@ -216,9 +220,7 @@ describe("App structure commands", () => {
     await user.keyboard("{Escape}");
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Detach" }),
-      ).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: "Detach" })).not.toBeDisabled();
     });
     await user.click(screen.getByRole("button", { name: "Detach" }));
 
@@ -329,7 +331,9 @@ describe("App Node browser", () => {
 
     const search = screen.getByLabelText("Search nodes");
     await user.type(search, "Alpha");
-    expect(screen.getByTestId(`browser-node-${first.rootIds[0]}`)).toBeInTheDocument();
+    expect(
+      screen.getByTestId(`browser-node-${first.rootIds[0]}`),
+    ).toBeInTheDocument();
     await user.keyboard("{Enter}");
 
     expect(screen.getByTestId("map-canvas")).toHaveAttribute(

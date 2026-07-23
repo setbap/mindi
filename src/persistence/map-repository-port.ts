@@ -14,4 +14,8 @@ export interface MapRepository {
   deleteMap(
     mapId: string,
   ): Promise<{ catalog: CatalogRecord; openMap: MapRecord }>;
+  importMaps(
+    maps: readonly MapRecord[],
+    palette?: CatalogRecord["palette"],
+  ): Promise<CatalogRecord>;
 }

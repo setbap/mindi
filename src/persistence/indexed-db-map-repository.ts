@@ -11,6 +11,7 @@ import {
   createInitialCatalog,
   createUntitledMap,
 } from "../domain/forest";
+import { remapImportedMaps } from "../domain/mindi-json";
 import type { CatalogRecord, MapRecord } from "../domain/types";
 import { SCHEMA_VERSION } from "../domain/types";
 import type { MapRepository } from "./map-repository-port";
@@ -231,6 +232,42 @@ export class IndexedDbMapRepository implements MapRepository {
     await tx.done;
 
     return { catalog, openMap };
+  }
+
+  async importMaps(
+    maps: readonly MapRecord[],
+    palette?: CatalogRecord["palette"],
+  ): Promise<CatalogRecord> {
+    if (maps.length === 0) {
+      throw new Error("Select at least one valid Map to import.");
+    }
+    maps.forEach(assertNonEmptyMap);
+    const db = await this.openDb();
+    const current = await db.get("catalog", "singleton");
+    if (!current) {
+      throw new Error("Catalog has not been initialized.");
+    }
+    const imported = remapImportedMaps(
+      maps,
+      current.maps.map((entry) => entry.name),
+    );
+    const catalog: CatalogRecord = {
+      ...current,
+      ...(palette ? { palette } : {}),
+      maps: [
+        ...current.maps,
+        ...imported.map((map) => ({ id: map.id, name: map.name })),
+      ],
+    };
+    assertNonEmptyCatalog(catalog);
+
+    const tx = db.transaction(["catalog", "maps"], "readwrite");
+    await tx.objectStore("catalog").put(catalog, "singleton");
+    for (const map of imported) {
+      await tx.objectStore("maps").put(map, map.id);
+    }
+    await tx.done;
+    return catalog;
   }
 }
 

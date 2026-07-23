@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import {
-  MapCanvas,
-  type MapCanvasHandle,
-} from "@/components/map-canvas";
+import { MapCanvas, type MapCanvasHandle } from "@/components/map-canvas";
 import { MapManager } from "@/components/map-manager";
 import { NodeBrowser } from "@/components/node-browser";
 import { StructureCommands } from "@/components/structure-commands";
@@ -66,6 +63,8 @@ function ReadyApp({ app }: { app: ReadyController }) {
     renameMap,
     switchMap,
     deleteMap,
+    importMaps,
+    exportMindiJson,
     focusNode,
     startEditing,
     setDraft,
@@ -256,6 +255,8 @@ function ReadyApp({ app }: { app: ReadyController }) {
           onRename={renameMap}
           onSwitch={switchMap}
           onDelete={deleteMap}
+          onImport={importMaps}
+          onExport={exportMindiJson}
         />
       </div>
 
