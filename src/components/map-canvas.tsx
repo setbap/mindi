@@ -52,6 +52,8 @@ interface MapCanvasProps {
   onCreateChild: () => void;
   onTypeCharacter: (value: string) => void;
   onArrow: (direction: "up" | "down" | "left" | "right") => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }
 
 interface CanvasNodeContextValue {
@@ -169,6 +171,8 @@ function MapCanvasFlow({
   onCreateChild,
   onTypeCharacter,
   onArrow,
+  onMoveUp,
+  onMoveDown,
 }: MapCanvasProps) {
   const focusedId = focusedIdOf(mode);
   const editing = isEditing(mode);
@@ -259,11 +263,19 @@ function MapCanvasFlow({
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
+      if (event.altKey) {
+        onMoveUp();
+        return;
+      }
       onArrow("up");
       return;
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
+      if (event.altKey) {
+        onMoveDown();
+        return;
+      }
       onArrow("down");
       return;
     }

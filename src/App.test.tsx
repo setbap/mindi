@@ -172,6 +172,78 @@ describe("App Focused and Editing", () => {
   });
 });
 
+describe("App structure commands", () => {
+  beforeEach(() => {
+    vi.mocked(createMapRepository).mockReset();
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("min-width: 768px"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
+
+  it("creates a Root, detaches a child, and blocks deleting the final Node", async () => {
+    const user = userEvent.setup();
+    const first = untitledMap("map-1");
+    const repository = mockRepository([first], "map-1");
+    vi.mocked(createMapRepository).mockReturnValue(repository);
+
+    render(<App />);
+    await waitFor(() => screen.getByTestId("structure-commands"));
+
+    await user.click(screen.getByRole("button", { name: "Create Root" }));
+    await waitFor(() => {
+      expect(screen.getAllByTestId(/^node-/)).toHaveLength(2);
+    });
+    expect(repository.saveMap).toHaveBeenCalled();
+
+    const canvas = screen.getByTestId("map-canvas");
+    canvas.focus();
+    await user.keyboard("{Tab}");
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Detach" }),
+      ).not.toBeDisabled();
+    });
+    await user.click(screen.getByRole("button", { name: "Detach" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId(/^node-/).length).toBeGreaterThanOrEqual(3);
+    });
+
+    // Delete until one Node remains
+    while (
+      screen.queryByRole("button", { name: "Delete" }) &&
+      !(screen.getByRole("button", { name: "Delete" }) as HTMLButtonElement)
+        .disabled
+    ) {
+      const before = screen.getAllByTestId(/^node-/).length;
+      await user.click(screen.getByRole("button", { name: "Delete" }));
+      const confirm = screen.queryByTestId("delete-confirm");
+      if (confirm) {
+        await user.click(
+          within(confirm).getByRole("button", { name: "Delete" }),
+        );
+      }
+      await waitFor(() => {
+        expect(screen.getAllByTestId(/^node-/).length).toBeLessThan(before);
+      });
+    }
+
+    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+    expect(
+      screen.getByText(/The final Node cannot be deleted/i),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("App Map manager", () => {
   beforeEach(() => {
     vi.mocked(createMapRepository).mockReset();

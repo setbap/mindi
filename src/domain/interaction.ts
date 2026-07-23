@@ -1,9 +1,21 @@
 import {
+  canDeleteNode,
+  canDetach,
+  canMoveDown,
+  canMoveUp,
+  canSwapWithParent,
   commitNodeMarkdown,
   createLastChild,
+  createRoot,
   createSiblingBelow,
+  deleteNodeRecursive,
+  detachNode,
   initialFocusedId,
+  moveDown,
+  moveUnder,
+  moveUp,
   siblingIdsFor,
+  swapWithParent,
 } from "./structure";
 import type { MapRecord } from "./types";
 
@@ -27,6 +39,13 @@ export type InteractionAction =
   | { type: "cancel" }
   | { type: "createSibling" }
   | { type: "createChild" }
+  | { type: "createRoot" }
+  | { type: "moveUp" }
+  | { type: "moveDown" }
+  | { type: "moveUnder"; targetId: string }
+  | { type: "swapWithParent" }
+  | { type: "detach" }
+  | { type: "deleteNode" }
   | { type: "insertIndent" }
   | { type: "arrow"; direction: "up" | "down" | "left" | "right" };
 
@@ -186,6 +205,77 @@ export function reduceInteraction(
           focusedId: newNodeId,
           draft: "",
         },
+        dirty: true,
+      };
+    }
+    case "createRoot": {
+      const result = createRoot(map);
+      return {
+        map: result.map,
+        mode: { kind: "focused", focusedId: result.focusedId },
+        dirty: true,
+      };
+    }
+    case "moveUp": {
+      if (!canMoveUp(map, mode.focusedId)) {
+        return { ...snapshot, dirty: false };
+      }
+      const result = moveUp(map, mode.focusedId);
+      return {
+        map: result.map,
+        mode: { kind: "focused", focusedId: result.focusedId },
+        dirty: true,
+      };
+    }
+    case "moveDown": {
+      if (!canMoveDown(map, mode.focusedId)) {
+        return { ...snapshot, dirty: false };
+      }
+      const result = moveDown(map, mode.focusedId);
+      return {
+        map: result.map,
+        mode: { kind: "focused", focusedId: result.focusedId },
+        dirty: true,
+      };
+    }
+    case "moveUnder": {
+      const result = moveUnder(map, mode.focusedId, action.targetId);
+      return {
+        map: result.map,
+        mode: { kind: "focused", focusedId: result.focusedId },
+        dirty: true,
+      };
+    }
+    case "swapWithParent": {
+      if (!canSwapWithParent(map, mode.focusedId)) {
+        return { ...snapshot, dirty: false };
+      }
+      const result = swapWithParent(map, mode.focusedId);
+      return {
+        map: result.map,
+        mode: { kind: "focused", focusedId: result.focusedId },
+        dirty: true,
+      };
+    }
+    case "detach": {
+      if (!canDetach(map, mode.focusedId)) {
+        return { ...snapshot, dirty: false };
+      }
+      const result = detachNode(map, mode.focusedId);
+      return {
+        map: result.map,
+        mode: { kind: "focused", focusedId: result.focusedId },
+        dirty: true,
+      };
+    }
+    case "deleteNode": {
+      if (!canDeleteNode(map, mode.focusedId)) {
+        return { ...snapshot, dirty: false };
+      }
+      const result = deleteNodeRecursive(map, mode.focusedId);
+      return {
+        map: result.map,
+        mode: { kind: "focused", focusedId: result.focusedId },
         dirty: true,
       };
     }

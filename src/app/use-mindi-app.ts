@@ -41,6 +41,13 @@ export interface MindiAppController {
   cancelEdit: () => void;
   createSibling: () => void;
   createChild: () => void;
+  createRoot: () => void;
+  moveUp: () => void;
+  moveDown: () => void;
+  moveUnder: (targetId: string) => void;
+  swapWithParent: () => void;
+  detach: () => void;
+  deleteNode: () => void;
   typeCharacter: (value: string) => void;
   arrow: (direction: "up" | "down" | "left" | "right") => void;
 }
@@ -226,6 +233,28 @@ export function useMindiApp(
     () => dispatch({ type: "createChild" }),
     [dispatch],
   );
+  const createRoot = useCallback(
+    () => dispatch({ type: "createRoot" }),
+    [dispatch],
+  );
+  const moveUp = useCallback(() => dispatch({ type: "moveUp" }), [dispatch]);
+  const moveDown = useCallback(
+    () => dispatch({ type: "moveDown" }),
+    [dispatch],
+  );
+  const moveUnder = useCallback(
+    (targetId: string) => dispatch({ type: "moveUnder", targetId }),
+    [dispatch],
+  );
+  const swapWithParent = useCallback(
+    () => dispatch({ type: "swapWithParent" }),
+    [dispatch],
+  );
+  const detach = useCallback(() => dispatch({ type: "detach" }), [dispatch]);
+  const deleteNode = useCallback(
+    () => dispatch({ type: "deleteNode" }),
+    [dispatch],
+  );
   const typeCharacter = useCallback(
     (value: string) => dispatch({ type: "typeCharacter", value }),
     [dispatch],
@@ -249,6 +278,13 @@ export function useMindiApp(
     cancelEdit,
     createSibling,
     createChild,
+    createRoot,
+    moveUp,
+    moveDown,
+    moveUnder,
+    swapWithParent,
+    detach,
+    deleteNode,
     typeCharacter,
     arrow,
   };

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { MapCanvas } from "@/components/map-canvas";
 import { MapManager } from "@/components/map-manager";
+import { StructureCommands } from "@/components/structure-commands";
 import { Button } from "@/components/ui/button";
 import { useMindiApp } from "./app/use-mindi-app";
 
@@ -19,6 +20,13 @@ export function App() {
     cancelEdit,
     createSibling,
     createChild,
+    createRoot,
+    moveUp,
+    moveDown,
+    moveUnder,
+    swapWithParent,
+    detach,
+    deleteNode,
     typeCharacter,
     arrow,
   } = useMindiApp();
@@ -58,6 +66,20 @@ export function App() {
         </Button>
       </header>
 
+      <div className="mx-auto w-full max-w-6xl shrink-0">
+        <StructureCommands
+          map={openMap}
+          mode={mode}
+          onCreateRoot={createRoot}
+          onMoveUp={moveUp}
+          onMoveDown={moveDown}
+          onMoveUnder={moveUnder}
+          onSwapWithParent={swapWithParent}
+          onDetach={detach}
+          onDelete={deleteNode}
+        />
+      </div>
+
       <div className="mx-auto min-h-0 w-full max-w-6xl flex-1">
         <MapCanvas
           map={openMap}
@@ -71,6 +93,8 @@ export function App() {
           onCreateChild={createChild}
           onTypeCharacter={typeCharacter}
           onArrow={arrow}
+          onMoveUp={moveUp}
+          onMoveDown={moveDown}
         />
       </div>
 
