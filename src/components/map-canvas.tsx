@@ -1,12 +1,15 @@
 import {
   createContext,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
+  type Ref,
 } from "react";
 import {
   Handle,
@@ -58,6 +61,12 @@ interface MapCanvasProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onCommitWidth: (nodeId: string, width: number) => void;
+  onEscapeExit?: () => void;
+}
+
+export interface MapCanvasHandle {
+  revealNode: (nodeId: string) => void;
+  focusHost: () => void;
 }
 
 interface CanvasNodeContextValue {
@@ -113,13 +122,12 @@ function MindiFlowNode({ id }: NodeProps<Node<FlowNodeData>>) {
   const ctx = useContext(CanvasNodeContext);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
+  const node = ctx?.map.nodes[id];
+  const nodeWidth = node?.width;
+  const nodeMarkdown = node?.markdown;
 
   useEffect(() => {
-    if (!ctx || !shellRef.current) {
-      return;
-    }
-    const node = ctx.map.nodes[id];
-    if (!node) {
+    if (!ctx || !shellRef.current || !node) {
       return;
     }
     // Defer layout measurement while the pointer is previewing a resize.
@@ -131,13 +139,9 @@ function MindiFlowNode({ id }: NodeProps<Node<FlowNodeData>>) {
     if (height > 0) {
       ctx.onMeasured(id, { width: node.width, height });
     }
-  }, [ctx, id, previewWidth, ctx?.map.nodes[id]?.width, ctx?.map.nodes[id]?.markdown]);
+  }, [ctx, id, previewWidth, node, nodeWidth, nodeMarkdown]);
 
-  if (!ctx) {
-    return null;
-  }
-  const node = ctx.map.nodes[id];
-  if (!node) {
+  if (!ctx || !node) {
     return null;
   }
 
@@ -196,18 +200,54 @@ function MapCanvasFlow({
   onMoveUp,
   onMoveDown,
   onCommitWidth,
-}: MapCanvasProps) {
+  onEscapeExit,
+  canvasRef,
+}: MapCanvasProps & { canvasRef: Ref<MapCanvasHandle> }) {
   const focusedId = focusedIdOf(mode);
   const editing = isEditing(mode);
-  const { fitView } = useReactFlow();
+  const { fitView, getNode, setCenter, getZoom } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const [measured, setMeasured] = useState<Record<string, NodeSize>>({});
   const [didFit, setDidFit] = useState(false);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    [],
+  );
 
   useEffect(() => {
     setMeasured({});
     setDidFit(false);
   }, [map.id]);
+
+  const revealNode = useCallback(
+    (nodeId: string) => {
+      const node = getNode(nodeId);
+      if (!node) {
+        return;
+      }
+      const width = node.width ?? node.measured?.width ?? 280;
+      const height = node.height ?? node.measured?.height ?? 48;
+      const x = node.position.x + width / 2;
+      const y = node.position.y + height / 2;
+      void setCenter(x, y, {
+        zoom: getZoom(),
+        duration: prefersReducedMotion ? 0 : 200,
+      });
+    },
+    [getNode, getZoom, prefersReducedMotion, setCenter],
+  );
+
+  useImperativeHandle(
+    canvasRef,
+    () => ({
+      revealNode,
+      focusHost: () => hostRef.current?.focus(),
+    }),
+    [revealNode],
+  );
 
   const onMeasured = useCallback((nodeId: string, size: NodeSize) => {
     setMeasured((prev) => {
@@ -278,6 +318,11 @@ function MapCanvasFlow({
       return;
     }
 
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onEscapeExit?.();
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       onCreateSibling();
@@ -331,6 +376,7 @@ function MapCanvasFlow({
   return (
     <CanvasNodeContext.Provider value={contextValue}>
       <div
+        ref={hostRef}
         role="application"
         tabIndex={0}
         aria-label="Map canvas"
@@ -360,10 +406,12 @@ function MapCanvasFlow({
   );
 }
 
-export function MapCanvas(props: MapCanvasProps) {
-  return (
-    <ReactFlowProvider>
-      <MapCanvasFlow {...props} />
-    </ReactFlowProvider>
-  );
-}
+export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(
+  function MapCanvas(props, ref) {
+    return (
+      <ReactFlowProvider>
+        <MapCanvasFlow {...props} canvasRef={ref} />
+      </ReactFlowProvider>
+    );
+  },
+);

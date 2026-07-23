@@ -16,6 +16,10 @@ vi.mock("./persistence/indexed-db-map-repository", () => ({
 
 import { createMapRepository } from "./persistence/indexed-db-map-repository";
 
+function canvasNodes() {
+  return within(screen.getByTestId("map-canvas")).getAllByTestId(/^node-/);
+}
+
 function untitledMap(id: string, name = "Untitled Map"): MapRecord {
   return {
     id,
@@ -139,9 +143,13 @@ describe("App Focused and Editing", () => {
     await user.keyboard("{Enter}");
 
     await waitFor(() => {
-      expect(screen.getByText("Hello")).toBeInTheDocument();
+      expect(repository.saveMap).toHaveBeenCalled();
+      const saved = vi.mocked(repository.saveMap).mock.calls.at(-1)?.[0];
+      expect(saved?.nodes[rootId].markdown).toBe("Hello");
     });
-    expect(repository.saveMap).toHaveBeenCalled();
+    expect(
+      within(screen.getByTestId("map-canvas")).getByText("Hello"),
+    ).toBeInTheDocument();
   });
 
   it("Enter creates a sibling and Tab creates a child while Focused", async () => {
@@ -159,7 +167,7 @@ describe("App Focused and Editing", () => {
     await user.keyboard("{Enter}");
 
     await waitFor(() => {
-      expect(screen.getAllByTestId(/^node-/)).toHaveLength(2);
+      expect(canvasNodes()).toHaveLength(2);
     });
 
     await user.keyboard("{Escape}");
@@ -167,7 +175,7 @@ describe("App Focused and Editing", () => {
     await user.keyboard("{Tab}");
 
     await waitFor(() => {
-      expect(screen.getAllByTestId(/^node-/).length).toBeGreaterThanOrEqual(3);
+      expect(canvasNodes().length).toBeGreaterThanOrEqual(3);
     });
   });
 });
@@ -198,7 +206,7 @@ describe("App structure commands", () => {
 
     await user.click(screen.getByRole("button", { name: "Create Root" }));
     await waitFor(() => {
-      expect(screen.getAllByTestId(/^node-/)).toHaveLength(2);
+      expect(canvasNodes()).toHaveLength(2);
     });
     expect(repository.saveMap).toHaveBeenCalled();
 
@@ -215,7 +223,7 @@ describe("App structure commands", () => {
     await user.click(screen.getByRole("button", { name: "Detach" }));
 
     await waitFor(() => {
-      expect(screen.getAllByTestId(/^node-/).length).toBeGreaterThanOrEqual(3);
+      expect(canvasNodes().length).toBeGreaterThanOrEqual(3);
     });
 
     // Delete until one Node remains
@@ -224,7 +232,7 @@ describe("App structure commands", () => {
       !(screen.getByRole("button", { name: "Delete" }) as HTMLButtonElement)
         .disabled
     ) {
-      const before = screen.getAllByTestId(/^node-/).length;
+      const before = canvasNodes().length;
       await user.click(screen.getByRole("button", { name: "Delete" }));
       const confirm = screen.queryByTestId("delete-confirm");
       if (confirm) {
@@ -233,7 +241,7 @@ describe("App structure commands", () => {
         );
       }
       await waitFor(() => {
-        expect(screen.getAllByTestId(/^node-/).length).toBeLessThan(before);
+        expect(canvasNodes().length).toBeLessThan(before);
       });
     }
 
@@ -291,6 +299,50 @@ describe("App resize, palette, and undo", () => {
       const saved = vi.mocked(repository.saveMap).mock.calls.at(-1)?.[0];
       expect(saved?.nodes[first.rootIds[0]].colorSlot).toBe(1);
     });
+  });
+});
+
+describe("App Node browser", () => {
+  beforeEach(() => {
+    vi.mocked(createMapRepository).mockReset();
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("min-width: 768px"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
+
+  it("searches Nodes and focuses a result shared with the canvas", async () => {
+    const user = userEvent.setup();
+    const first = untitledMap("map-1");
+    first.nodes[first.rootIds[0]].markdown = "Alpha root";
+    const repository = mockRepository([first], "map-1");
+    vi.mocked(createMapRepository).mockReturnValue(repository);
+
+    render(<App />);
+    await waitFor(() => screen.getByTestId("map-node-browser"));
+
+    const search = screen.getByLabelText("Search nodes");
+    await user.type(search, "Alpha");
+    expect(screen.getByTestId(`browser-node-${first.rootIds[0]}`)).toBeInTheDocument();
+    await user.keyboard("{Enter}");
+
+    expect(screen.getByTestId("map-canvas")).toHaveAttribute(
+      "aria-activedescendant",
+      `node-${first.rootIds[0]}`,
+    );
+
+    await user.clear(search);
+    await user.type(search, "zzzz");
+    expect(screen.getByText("No matching nodes")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(search).toHaveValue("");
+    expect(screen.queryByText("No matching nodes")).not.toBeInTheDocument();
   });
 });
 

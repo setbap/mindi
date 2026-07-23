@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import type { InteractionMode } from "@/domain/interaction";
+import { nodeLabel } from "@/domain/node-browser";
 import {
   clampNodeWidth,
   MAX_NODE_WIDTH,
@@ -62,21 +63,24 @@ export function NodeView({
     onPreviewWidth?.(null);
   }, [node.width, onPreviewWidth]);
 
-  const label = node.markdown.trim().length > 0 ? node.markdown : "Empty Node";
+  const label = nodeLabel(node.markdown);
 
   function onEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
+      event.stopPropagation();
       onCommit();
       return;
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       onCancel();
       return;
     }
     if (event.key === "Tab") {
       event.preventDefault();
+      event.stopPropagation();
       const el = event.currentTarget;
       const start = el.selectionStart;
       const end = el.selectionEnd;
