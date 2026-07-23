@@ -1,31 +1,52 @@
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import type { InteractionMode } from "@/domain/interaction";
+import {
+  clampNodeWidth,
+  MAX_NODE_WIDTH,
+  MIN_NODE_WIDTH,
+} from "@/domain/resize";
 import type { NodeRecord } from "@/domain/types";
+import { useIsDesktop } from "@/hooks/use-is-desktop";
 import { cn } from "@/lib/utils";
 
 interface NodeViewProps {
   node: NodeRecord;
   mode: InteractionMode;
+  accentColor: string;
   onFocus: (nodeId: string) => void;
   onStartEditing: (nodeId: string) => void;
   onDraftChange: (value: string) => void;
   onCommit: () => void;
   onCancel: () => void;
+  onCommitWidth: (width: number) => void;
+  onPreviewWidth?: (width: number | null) => void;
 }
 
 export function NodeView({
   node,
   mode,
+  accentColor,
   onFocus,
   onStartEditing,
   onDraftChange,
   onCommit,
   onCancel,
+  onCommitWidth,
+  onPreviewWidth,
 }: NodeViewProps) {
   const isFocused = mode.focusedId === node.id;
   const isEditing = mode.kind === "editing" && mode.focusedId === node.id;
+  const isDesktop = useIsDesktop();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [previewWidth, setPreviewWidth] = useState<number | null>(null);
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -36,7 +57,12 @@ export function NodeView({
     }
   }, [isEditing]);
 
-  const label = node.markdown.trim().length > 0 ? node.markdown : "Empty node";
+  useEffect(() => {
+    setPreviewWidth(null);
+    onPreviewWidth?.(null);
+  }, [node.width, onPreviewWidth]);
+
+  const label = node.markdown.trim().length > 0 ? node.markdown : "Empty Node";
 
   function onEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -63,15 +89,52 @@ export function NodeView({
     }
   }
 
+  function onResizePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    onFocus(node.id);
+    dragRef.current = { startX: event.clientX, startWidth: node.width };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function onResizePointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!dragRef.current) {
+      return;
+    }
+    const delta = event.clientX - dragRef.current.startX;
+    const next = clampNodeWidth(dragRef.current.startWidth + delta);
+    setPreviewWidth(next);
+    onPreviewWidth?.(next);
+  }
+
+  function onResizePointerUp(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!dragRef.current) {
+      return;
+    }
+    const delta = event.clientX - dragRef.current.startX;
+    const nextWidth = clampNodeWidth(dragRef.current.startWidth + delta);
+    dragRef.current = null;
+    setPreviewWidth(null);
+    onPreviewWidth?.(null);
+    if (nextWidth !== node.width) {
+      onCommitWidth(nextWidth);
+    }
+  }
+
   return (
     <div
       id={`node-${node.id}`}
       aria-label={label}
       data-testid={`node-${node.id}`}
       className={cn(
-        "bg-card text-card-foreground nodrag nopan rounded-md border p-3 outline-none",
+        "bg-card text-card-foreground nodrag nopan relative rounded-md border p-3 outline-none",
         isFocused && "ring-ring border-ring ring-2",
       )}
+      style={{
+        width: "100%",
+        borderLeftWidth: 4,
+        borderLeftColor: accentColor,
+      }}
       onClick={(event) => {
         event.stopPropagation();
         onFocus(node.id);
@@ -110,6 +173,25 @@ export function NodeView({
           {node.markdown === "" ? "Start typing…" : node.markdown}
         </p>
       )}
+
+      {isDesktop && isFocused && !isEditing ? (
+        <button
+          type="button"
+          aria-label="Resize Node"
+          data-testid={`resize-handle-${node.id}`}
+          className="nopan nodrag absolute top-0 right-0 h-full w-2 cursor-ew-resize rounded-r-md bg-transparent hover:bg-black/10"
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={onResizePointerUp}
+          onClick={(event) => event.stopPropagation()}
+        />
+      ) : null}
+
+      {previewWidth !== null ? (
+        <span className="text-muted-foreground absolute -bottom-5 right-0 text-xs">
+          {previewWidth}px ({MIN_NODE_WIDTH}–{MAX_NODE_WIDTH})
+        </span>
+      ) : null}
     </div>
   );
 }

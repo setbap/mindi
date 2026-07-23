@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type KeyboardEvent,
 } from "react";
@@ -25,7 +26,8 @@ import "@xyflow/react/dist/style.css";
 import { NodeView } from "@/components/node-view";
 import type { InteractionMode } from "@/domain/interaction";
 import { focusedIdOf, isEditing } from "@/domain/interaction";
-import type { MapRecord } from "@/domain/types";
+import { paletteColor } from "@/domain/palette";
+import type { CatalogRecord, MapRecord } from "@/domain/types";
 import { MAP_CANVAS_FLOW_PROPS } from "@/layout/canvas-flow-props";
 import {
   layoutMap,
@@ -43,6 +45,7 @@ import { cn } from "@/lib/utils";
 interface MapCanvasProps {
   map: MapRecord;
   mode: InteractionMode;
+  palette: CatalogRecord["palette"];
   onFocus: (nodeId: string) => void;
   onStartEditing: (nodeId: string) => void;
   onDraftChange: (value: string) => void;
@@ -54,16 +57,19 @@ interface MapCanvasProps {
   onArrow: (direction: "up" | "down" | "left" | "right") => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onCommitWidth: (nodeId: string, width: number) => void;
 }
 
 interface CanvasNodeContextValue {
   map: MapRecord;
   mode: InteractionMode;
+  palette: CatalogRecord["palette"];
   onFocus: (nodeId: string) => void;
   onStartEditing: (nodeId: string) => void;
   onDraftChange: (value: string) => void;
   onCommit: () => void;
   onCancel: () => void;
+  onCommitWidth: (nodeId: string, width: number) => void;
   onMeasured: (nodeId: string, size: NodeSize) => void;
 }
 
@@ -105,6 +111,28 @@ function ConnectorEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
 
 function MindiFlowNode({ id }: NodeProps<Node<FlowNodeData>>) {
   const ctx = useContext(CanvasNodeContext);
+  const [previewWidth, setPreviewWidth] = useState<number | null>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ctx || !shellRef.current) {
+      return;
+    }
+    const node = ctx.map.nodes[id];
+    if (!node) {
+      return;
+    }
+    // Defer layout measurement while the pointer is previewing a resize.
+    if (previewWidth !== null) {
+      return;
+    }
+    const el = shellRef.current;
+    const height = el.offsetHeight;
+    if (height > 0) {
+      ctx.onMeasured(id, { width: node.width, height });
+    }
+  }, [ctx, id, previewWidth, ctx?.map.nodes[id]?.width, ctx?.map.nodes[id]?.markdown]);
+
   if (!ctx) {
     return null;
   }
@@ -112,6 +140,8 @@ function MindiFlowNode({ id }: NodeProps<Node<FlowNodeData>>) {
   if (!node) {
     return null;
   }
+
+  const displayWidth = previewWidth ?? node.width;
 
   return (
     <>
@@ -121,29 +151,20 @@ function MindiFlowNode({ id }: NodeProps<Node<FlowNodeData>>) {
         className="!pointer-events-none !h-px !w-px !border-0 !bg-transparent !opacity-0"
         isConnectable={false}
       />
-      <div
-        className="nopan"
-        style={{ width: node.width }}
-        ref={(el) => {
-          if (!el) {
-            return;
-          }
-          // Use offsetHeight (layout box), not getBoundingClientRect — RF zoom
-          // would otherwise feed viewport-scaled sizes back into Dagre forever.
-          const height = el.offsetHeight;
-          if (height > 0) {
-            ctx.onMeasured(id, { width: node.width, height });
-          }
-        }}
-      >
+      <div className="nopan" style={{ width: displayWidth }} ref={shellRef}>
         <NodeView
           node={node}
           mode={ctx.mode}
+          accentColor={paletteColor(ctx.palette, node.colorSlot)}
           onFocus={ctx.onFocus}
           onStartEditing={ctx.onStartEditing}
           onDraftChange={ctx.onDraftChange}
           onCommit={ctx.onCommit}
           onCancel={ctx.onCancel}
+          onCommitWidth={(width) => {
+            ctx.onCommitWidth(id, width);
+          }}
+          onPreviewWidth={setPreviewWidth}
         />
       </div>
       <Handle
@@ -162,6 +183,7 @@ const edgeTypes = { smoothstep: ConnectorEdge };
 function MapCanvasFlow({
   map,
   mode,
+  palette,
   onFocus,
   onStartEditing,
   onDraftChange,
@@ -173,6 +195,7 @@ function MapCanvasFlow({
   onArrow,
   onMoveUp,
   onMoveDown,
+  onCommitWidth,
 }: MapCanvasProps) {
   const focusedId = focusedIdOf(mode);
   const editing = isEditing(mode);
@@ -224,21 +247,25 @@ function MapCanvasFlow({
     () => ({
       map,
       mode,
+      palette,
       onFocus,
       onStartEditing,
       onDraftChange,
       onCommit,
       onCancel,
+      onCommitWidth,
       onMeasured,
     }),
     [
       map,
       mode,
+      palette,
       onFocus,
       onStartEditing,
       onDraftChange,
       onCommit,
       onCancel,
+      onCommitWidth,
       onMeasured,
     ],
   );

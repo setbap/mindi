@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MapCanvas } from "@/components/map-canvas";
 import { MapManager } from "@/components/map-manager";
 import { StructureCommands } from "@/components/structure-commands";
+import { StyleCommands } from "@/components/style-commands";
 import { Button } from "@/components/ui/button";
 import { useMindiApp } from "./app/use-mindi-app";
 
@@ -27,6 +28,12 @@ export function App() {
     swapWithParent,
     detach,
     deleteNode,
+    setWidth,
+    resetWidth,
+    setColorSlot,
+    updatePalette,
+    undo,
+    redo,
     typeCharacter,
     arrow,
   } = useMindiApp();
@@ -48,7 +55,7 @@ export function App() {
     );
   }
 
-  const { catalog, openMap, mode } = state;
+  const { catalog, openMap, mode, canUndo, canRedo } = state;
 
   return (
     <main className="flex h-screen flex-col gap-4 p-4 md:p-6">
@@ -66,7 +73,7 @@ export function App() {
         </Button>
       </header>
 
-      <div className="mx-auto w-full max-w-6xl shrink-0">
+      <div className="mx-auto flex w-full max-w-6xl shrink-0 flex-col gap-2">
         <StructureCommands
           map={openMap}
           mode={mode}
@@ -78,12 +85,28 @@ export function App() {
           onDetach={detach}
           onDelete={deleteNode}
         />
+        <StyleCommands
+          map={openMap}
+          mode={mode}
+          catalog={catalog}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onSetWidth={setWidth}
+          onResetWidth={resetWidth}
+          onSetColorSlot={setColorSlot}
+          onUpdatePalette={(slot, hex) => {
+            void updatePalette(slot, hex);
+          }}
+          onUndo={undo}
+          onRedo={redo}
+        />
       </div>
 
       <div className="mx-auto min-h-0 w-full max-w-6xl flex-1">
         <MapCanvas
           map={openMap}
           mode={mode}
+          palette={catalog.palette}
           onFocus={focusNode}
           onStartEditing={startEditing}
           onDraftChange={setDraft}
@@ -95,6 +118,7 @@ export function App() {
           onArrow={arrow}
           onMoveUp={moveUp}
           onMoveDown={moveDown}
+          onCommitWidth={(nodeId, width) => setWidth(width, nodeId)}
         />
       </div>
 

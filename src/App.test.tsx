@@ -244,6 +244,56 @@ describe("App structure commands", () => {
   });
 });
 
+describe("App resize, palette, and undo", () => {
+  beforeEach(() => {
+    vi.mocked(createMapRepository).mockReset();
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("min-width: 768px"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
+
+  it("resizes via accessible command, sets color, and undoes", async () => {
+    const user = userEvent.setup();
+    const first = untitledMap("map-1");
+    const repository = mockRepository([first], "map-1");
+    vi.mocked(createMapRepository).mockReturnValue(repository);
+
+    render(<App />);
+    await waitFor(() => screen.getByTestId("style-commands"));
+
+    await user.click(screen.getByRole("button", { name: "Resize" }));
+    const widthInput = screen.getByLabelText("Node width");
+    await user.clear(widthInput);
+    await user.type(widthInput, "360");
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(repository.saveMap).toHaveBeenCalled();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Color slot 3" }));
+    await waitFor(() => {
+      const saved = vi.mocked(repository.saveMap).mock.calls.at(-1)?.[0];
+      expect(saved?.nodes[first.rootIds[0]].colorSlot).toBe(3);
+      expect(saved?.nodes[first.rootIds[0]].width).toBe(360);
+    });
+
+    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => {
+      const saved = vi.mocked(repository.saveMap).mock.calls.at(-1)?.[0];
+      expect(saved?.nodes[first.rootIds[0]].colorSlot).toBe(1);
+    });
+  });
+});
+
 describe("App Map manager", () => {
   beforeEach(() => {
     vi.mocked(createMapRepository).mockReset();

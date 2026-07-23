@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createInitialInteraction,
+  focusedIdOf,
   reduceInteraction,
   type InteractionAction,
   type InteractionMode,
   type InteractionSnapshot,
 } from "../domain/interaction";
-import type { CatalogRecord, MapRecord } from "../domain/types";
+import { updatePaletteSlot } from "../domain/palette";
+import type { CatalogRecord, ColorSlot, MapRecord } from "../domain/types";
+import {
+  canRedo as historyCanRedo,
+  canUndo as historyCanUndo,
+  createHistory,
+  pushCommand,
+  redo as historyRedo,
+  undo as historyUndo,
+  type UndoHistory,
+} from "../domain/undo-history";
 import { createMapRepository } from "../persistence/indexed-db-map-repository";
 import type { MapRepository } from "../persistence/map-repository-port";
 
@@ -15,6 +26,8 @@ interface ReadyState {
   catalog: CatalogRecord;
   openMap: MapRecord;
   mode: InteractionMode;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 interface LoadingState {
@@ -48,6 +61,12 @@ export interface MindiAppController {
   swapWithParent: () => void;
   detach: () => void;
   deleteNode: () => void;
+  setWidth: (width: number, nodeId?: string) => void;
+  resetWidth: () => void;
+  setColorSlot: (slot: ColorSlot) => void;
+  updatePalette: (slot: ColorSlot, hex: string) => Promise<void>;
+  undo: () => void;
+  redo: () => void;
   typeCharacter: (value: string) => void;
   arrow: (direction: "up" | "down" | "left" | "right") => void;
 }
@@ -55,13 +74,20 @@ export interface MindiAppController {
 function readyFrom(
   catalog: CatalogRecord,
   interaction: InteractionSnapshot,
+  history: UndoHistory,
 ): ReadyState {
   return {
     status: "ready",
     catalog,
     openMap: interaction.map,
     mode: interaction.mode,
+    canUndo: historyCanUndo(history),
+    canRedo: historyCanRedo(history),
   };
+}
+
+function seedHistory(map: MapRecord, focusedId: string): UndoHistory {
+  return pushCommand(createHistory(), { map, focusedId });
 }
 
 export function useMindiApp(
@@ -71,17 +97,22 @@ export function useMindiApp(
   const repositoryRef = useRef<MapRepository | null>(null);
   const interactionRef = useRef<InteractionSnapshot | null>(null);
   const catalogRef = useRef<CatalogRecord | null>(null);
+  const historyRef = useRef<UndoHistory>(createHistory());
 
   const commitInteraction = useCallback(async (next: InteractionSnapshot) => {
     interactionRef.current = next;
     if (next.dirty) {
+      historyRef.current = pushCommand(historyRef.current, {
+        map: next.map,
+        focusedId: focusedIdOf(next.mode),
+      });
       await repositoryRef.current?.saveMap(next.map);
     }
     const catalog = catalogRef.current;
     if (!catalog) {
       return;
     }
-    setState(readyFrom(catalog, next));
+    setState(readyFrom(catalog, next, historyRef.current));
   }, []);
 
   const dispatch = useCallback(
@@ -96,6 +127,20 @@ export function useMindiApp(
     [commitInteraction],
   );
 
+  const openMapSession = useCallback(
+    (catalog: CatalogRecord, openMap: MapRecord) => {
+      const interaction = createInitialInteraction(openMap);
+      catalogRef.current = catalog;
+      interactionRef.current = interaction;
+      historyRef.current = seedHistory(
+        openMap,
+        focusedIdOf(interaction.mode),
+      );
+      setState(readyFrom(catalog, interaction, historyRef.current));
+    },
+    [],
+  );
+
   useEffect(() => {
     let cancelled = false;
     const repository = createRepository();
@@ -105,10 +150,7 @@ export function useMindiApp(
       try {
         const { catalog, openMap } = await repository.initialize();
         if (!cancelled) {
-          const interaction = createInitialInteraction(openMap);
-          catalogRef.current = catalog;
-          interactionRef.current = interaction;
-          setState(readyFrom(catalog, interaction));
+          openMapSession(catalog, openMap);
         }
       } catch (error) {
         if (!cancelled) {
@@ -125,7 +167,7 @@ export function useMindiApp(
     return () => {
       cancelled = true;
     };
-  }, [createRepository]);
+  }, [createRepository, openMapSession]);
 
   const createMap = useCallback(async () => {
     const repository = repositoryRef.current;
@@ -133,11 +175,8 @@ export function useMindiApp(
       return;
     }
     const { catalog, openMap } = await repository.createMap();
-    const interaction = createInitialInteraction(openMap);
-    catalogRef.current = catalog;
-    interactionRef.current = interaction;
-    setState(readyFrom(catalog, interaction));
-  }, []);
+    openMapSession(catalog, openMap);
+  }, [openMapSession]);
 
   const renameMap = useCallback(async (mapId: string, name: string) => {
     const repository = repositoryRef.current;
@@ -167,29 +206,29 @@ export function useMindiApp(
     });
   }, []);
 
-  const switchMap = useCallback(async (mapId: string) => {
-    const repository = repositoryRef.current;
-    if (!repository) {
-      return;
-    }
-    const { catalog, openMap } = await repository.switchMap(mapId);
-    const interaction = createInitialInteraction(openMap);
-    catalogRef.current = catalog;
-    interactionRef.current = interaction;
-    setState(readyFrom(catalog, interaction));
-  }, []);
+  const switchMap = useCallback(
+    async (mapId: string) => {
+      const repository = repositoryRef.current;
+      if (!repository) {
+        return;
+      }
+      const { catalog, openMap } = await repository.switchMap(mapId);
+      openMapSession(catalog, openMap);
+    },
+    [openMapSession],
+  );
 
-  const deleteMap = useCallback(async (mapId: string) => {
-    const repository = repositoryRef.current;
-    if (!repository) {
-      return;
-    }
-    const { catalog, openMap } = await repository.deleteMap(mapId);
-    const interaction = createInitialInteraction(openMap);
-    catalogRef.current = catalog;
-    interactionRef.current = interaction;
-    setState(readyFrom(catalog, interaction));
-  }, []);
+  const deleteMap = useCallback(
+    async (mapId: string) => {
+      const repository = repositoryRef.current;
+      if (!repository) {
+        return;
+      }
+      const { catalog, openMap } = await repository.deleteMap(mapId);
+      openMapSession(catalog, openMap);
+    },
+    [openMapSession],
+  );
 
   const focusNode = useCallback(
     (nodeId: string) => dispatch({ type: "focus", nodeId }),
@@ -255,6 +294,67 @@ export function useMindiApp(
     () => dispatch({ type: "deleteNode" }),
     [dispatch],
   );
+  const setWidth = useCallback(
+    (width: number, nodeId?: string) =>
+      dispatch({ type: "setWidth", width, nodeId }),
+    [dispatch],
+  );
+  const resetWidth = useCallback(
+    () => dispatch({ type: "resetWidth" }),
+    [dispatch],
+  );
+  const setColorSlot = useCallback(
+    (slot: ColorSlot) => dispatch({ type: "setColorSlot", slot }),
+    [dispatch],
+  );
+
+  const updatePalette = useCallback(async (slot: ColorSlot, hex: string) => {
+    const repository = repositoryRef.current;
+    const catalog = catalogRef.current;
+    const interaction = interactionRef.current;
+    if (!repository || !catalog || !interaction) {
+      return;
+    }
+    const nextCatalog = updatePaletteSlot(catalog, slot, hex);
+    await repository.saveCatalog(nextCatalog);
+    catalogRef.current = nextCatalog;
+    setState(readyFrom(nextCatalog, interaction, historyRef.current));
+  }, []);
+
+  const undo = useCallback(() => {
+    const catalog = catalogRef.current;
+    if (!catalog || !historyCanUndo(historyRef.current)) {
+      return;
+    }
+    const result = historyUndo(historyRef.current);
+    historyRef.current = result.history;
+    const next: InteractionSnapshot = {
+      map: result.entry.map,
+      mode: { kind: "focused", focusedId: result.entry.focusedId },
+      dirty: false,
+    };
+    interactionRef.current = next;
+    void repositoryRef.current?.saveMap(next.map);
+    setState(readyFrom(catalog, next, historyRef.current));
+  }, []);
+
+  const redo = useCallback(() => {
+    const catalog = catalogRef.current;
+    if (!catalog || !historyCanRedo(historyRef.current)) {
+      return;
+    }
+    const result = historyRedo(historyRef.current);
+    historyRef.current = result.history;
+    const next: InteractionSnapshot = {
+      map: result.entry.map,
+      mode: { kind: "focused", focusedId: result.entry.focusedId },
+      dirty: false,
+    };
+    interactionRef.current = next;
+    void repositoryRef.current?.saveMap(next.map);
+    setState(readyFrom(catalog, next, historyRef.current));
+  }, []);
+
   const typeCharacter = useCallback(
     (value: string) => dispatch({ type: "typeCharacter", value }),
     [dispatch],
@@ -285,6 +385,12 @@ export function useMindiApp(
     swapWithParent,
     detach,
     deleteNode,
+    setWidth,
+    resetWidth,
+    setColorSlot,
+    updatePalette,
+    undo,
+    redo,
     typeCharacter,
     arrow,
   };

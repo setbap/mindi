@@ -1,3 +1,5 @@
+import { setNodeColorSlot } from "./palette";
+import { resetNodeWidth, setNodeWidth } from "./resize";
 import {
   canDeleteNode,
   canDetach,
@@ -17,7 +19,7 @@ import {
   siblingIdsFor,
   swapWithParent,
 } from "./structure";
-import type { MapRecord } from "./types";
+import type { ColorSlot, MapRecord } from "./types";
 
 export type InteractionMode =
   | { kind: "focused"; focusedId: string }
@@ -46,6 +48,9 @@ export type InteractionAction =
   | { type: "swapWithParent" }
   | { type: "detach" }
   | { type: "deleteNode" }
+  | { type: "setWidth"; width: number; nodeId?: string }
+  | { type: "resetWidth" }
+  | { type: "setColorSlot"; slot: ColorSlot }
   | { type: "insertIndent" }
   | { type: "arrow"; direction: "up" | "down" | "left" | "right" };
 
@@ -276,6 +281,47 @@ export function reduceInteraction(
       return {
         map: result.map,
         mode: { kind: "focused", focusedId: result.focusedId },
+        dirty: true,
+      };
+    }
+    case "setWidth": {
+      const targetId = action.nodeId ?? mode.focusedId;
+      if (!map.nodes[targetId]) {
+        return { ...snapshot, dirty: false };
+      }
+      const nextMap = setNodeWidth(map, targetId, action.width);
+      if (nextMap.nodes[targetId].width === map.nodes[targetId].width) {
+        return {
+          map,
+          mode: { kind: "focused", focusedId: targetId },
+          dirty: false,
+        };
+      }
+      return {
+        map: nextMap,
+        mode: { kind: "focused", focusedId: targetId },
+        dirty: true,
+      };
+    }
+    case "resetWidth": {
+      const nextMap = resetNodeWidth(map, mode.focusedId);
+      if (nextMap.nodes[mode.focusedId].width === map.nodes[mode.focusedId].width) {
+        return { ...snapshot, dirty: false };
+      }
+      return {
+        map: nextMap,
+        mode: { kind: "focused", focusedId: mode.focusedId },
+        dirty: true,
+      };
+    }
+    case "setColorSlot": {
+      const nextMap = setNodeColorSlot(map, mode.focusedId, action.slot);
+      if (nextMap.nodes[mode.focusedId].colorSlot === map.nodes[mode.focusedId].colorSlot) {
+        return { ...snapshot, dirty: false };
+      }
+      return {
+        map: nextMap,
+        mode: { kind: "focused", focusedId: mode.focusedId },
         dirty: true,
       };
     }
