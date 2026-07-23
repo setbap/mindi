@@ -7,6 +7,7 @@ export const RANK_SEP = 64;
 
 /** Sibling / component spacing in px — SPEC: 32px. */
 export const NODE_SEP = 32;
+export const LAYOUT_PERFORMANCE_ENTRY = "mindi:layout";
 
 export interface NodeSize {
   width: number;
@@ -35,6 +36,7 @@ export function layoutMap(
   map: MapRecord,
   sizes: Record<string, NodeSize>,
 ): LayoutResult {
+  const startedAt = performance.now();
   const g = new Graph({ multigraph: false, compound: false });
   g.setGraph({
     rankdir: "LR",
@@ -78,6 +80,10 @@ export function layoutMap(
     throw new Error("Layout produced positive-area Node overlap.");
   }
 
+  performance.measure(LAYOUT_PERFORMANCE_ENTRY, {
+    start: startedAt,
+    end: performance.now(),
+  });
   return { nodes, edges };
 }
 

@@ -2,6 +2,7 @@ import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IndexedDbMapRepository } from "./indexed-db-map-repository";
+import { createUntitledMap } from "../domain/forest";
 
 describe("IndexedDbMapRepository", () => {
   beforeEach(() => {
@@ -79,5 +80,35 @@ describe("IndexedDbMapRepository", () => {
     const reopened = await new IndexedDbMapRepository().initialize();
     expect(reopened.catalog.maps).toHaveLength(1);
     expect(reopened.openMap.name).toBe("Notes");
+  });
+
+  it("additively imports Maps with fresh IDs and does not switch the Open Map", async () => {
+    const repository = new IndexedDbMapRepository();
+    const initial = await repository.initialize();
+    const source = createUntitledMap("source-map");
+    source.name = initial.openMap.name;
+    const sourceRoot = source.rootIds[0];
+    const importedPalette = [
+      "#111111",
+      "#222222",
+      "#333333",
+      "#444444",
+      "#555555",
+      "#666666",
+      "#777777",
+      "#888888",
+      "#999999",
+    ] as const;
+
+    const catalog = await repository.importMaps([source], importedPalette);
+
+    expect(catalog.openMapId).toBe(initial.openMap.id);
+    expect(catalog.maps).toHaveLength(2);
+    const imported = catalog.maps.find((map) => map.id !== initial.openMap.id)!;
+    expect(imported.id).not.toBe(source.id);
+    expect(imported.name).toBe("Untitled Map (imported)");
+    const importedMap = await repository.loadMap(imported.id);
+    expect(importedMap?.rootIds[0]).not.toBe(sourceRoot);
+    expect(catalog.palette).toEqual(importedPalette);
   });
 });

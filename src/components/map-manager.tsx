@@ -1,8 +1,20 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { canDeleteMap } from "@/domain/catalog";
-import type { CatalogRecord } from "@/domain/types";
+import {
+  MINDI_JSON_EXTENSION,
+  MINDI_JSON_MEDIA_TYPE,
+  parseMindiImport,
+  type ParsedMindiImport,
+} from "@/domain/mindi-json";
+import type { CatalogRecord, MapRecord } from "@/domain/types";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
 import { useI18n } from "@/i18n/i18n-context";
 import { cn } from "@/lib/utils";
@@ -16,6 +28,11 @@ interface MapManagerProps {
   onRename: (mapId: string, name: string) => Promise<void>;
   onSwitch: (mapId: string) => Promise<void>;
   onDelete: (mapId: string) => Promise<void>;
+  onImport: (
+    maps: readonly MapRecord[],
+    palette?: CatalogRecord["palette"],
+  ) => Promise<void>;
+  onExport: (allMaps: boolean) => Promise<string>;
 }
 
 export function MapManager({
@@ -26,11 +43,22 @@ export function MapManager({
   onRename,
   onSwitch,
   onDelete,
+  onImport,
+  onExport,
 }: MapManagerProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importPreview, setImportPreview] = useState<ParsedMindiImport | null>(
+    null,
+  );
+  const [selectedImportIndexes, setSelectedImportIndexes] = useState<
+    Set<number>
+  >(new Set());
+  const [importError, setImportError] = useState<string | null>(null);
+  const [restorePalette, setRestorePalette] = useState(false);
   const deleteAllowed = canDeleteMap(catalog);
   const isDesktop = useIsDesktop();
   const { t } = useI18n();
@@ -91,6 +119,56 @@ export function MapManager({
     }
   }
 
+  async function chooseImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const preview = parseMindiImport(await file.text());
+      setImportPreview(preview);
+      setSelectedImportIndexes(
+        new Set(preview.validMaps.map((_, index) => index)),
+      );
+      setRestorePalette(false);
+      setImportError(null);
+    } catch (error) {
+      setImportPreview(null);
+      setImportError(
+        error instanceof Error ? error.message : t("importFailed"),
+      );
+    }
+  }
+
+  async function confirmImport() {
+    if (!importPreview) return;
+    const maps = importPreview.validMaps.filter((_, index) =>
+      selectedImportIndexes.has(index),
+    );
+    if (maps.length === 0) {
+      setImportError(t("selectAtLeastOneMap"));
+      return;
+    }
+    await run(async () => {
+      await onImport(maps, restorePalette ? importPreview.palette : undefined);
+      setImportPreview(null);
+      setSelectedImportIndexes(new Set());
+      setImportError(null);
+    });
+  }
+
+  async function exportMaps(allMaps: boolean) {
+    await run(async () => {
+      const json = await onExport(allMaps);
+      const blob = new Blob([json], { type: MINDI_JSON_MEDIA_TYPE });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `mindi${allMaps ? "-backup" : ""}${MINDI_JSON_EXTENSION}`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
   return (
     <ResponsiveOverlay
       open={open}
@@ -107,6 +185,95 @@ export function MapManager({
         >
           {t("createMap")}
         </Button>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => void exportMaps(false)}
+          >
+            {t("exportMap")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => void exportMaps(true)}
+          >
+            {t("exportAllMaps")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {t("importMaps")}
+          </Button>
+          <input
+            ref={fileInputRef}
+            className="sr-only"
+            type="file"
+            accept={`${MINDI_JSON_MEDIA_TYPE},${MINDI_JSON_EXTENSION},application/json`}
+            onChange={(event) => void chooseImportFile(event)}
+          />
+        </div>
+
+        {importPreview ? (
+          <section
+            aria-label={t("selectImportMaps")}
+            className="flex flex-col gap-2 rounded-md border p-3"
+          >
+            <p className="text-sm font-medium">{t("selectImportMaps")}</p>
+            {importPreview.validMaps.map((map, index) => (
+              <label
+                key={`${map.id}-${index}`}
+                className="flex items-center gap-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedImportIndexes.has(index)}
+                  onChange={(event) =>
+                    setSelectedImportIndexes((previous) => {
+                      const next = new Set(previous);
+                      if (event.target.checked) next.add(index);
+                      else next.delete(index);
+                      return next;
+                    })
+                  }
+                />
+                {map.name}
+              </label>
+            ))}
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={restorePalette}
+                onChange={(event) => setRestorePalette(event.target.checked)}
+              />
+              {t("restorePalette")}
+            </label>
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy}
+              onClick={() => void confirmImport()}
+            >
+              {t("importSelected")}
+            </Button>
+          </section>
+        ) : null}
+        {importPreview?.invalidMaps.length ? (
+          <p role="status" className="text-muted-foreground text-sm">
+            {t("importInvalidMaps")}: {importPreview.invalidMaps.join(" ")}
+          </p>
+        ) : null}
+        {importError ? (
+          <p role="alert" className="text-destructive text-sm">
+            {importError}
+          </p>
+        ) : null}
 
         <ul className="flex flex-col gap-2" aria-label={t("mapCatalog")}>
           {catalog.maps.map((entry) => {

@@ -11,7 +11,7 @@ test("Node browser search focuses and reveals a canvas Node", async ({
   await page.keyboard.type("Hello search target");
   await page.keyboard.press("Enter");
   await expect(
-    page.getByTestId("map-canvas").getByText("Hello search target"),
+    page.getByTestId("safe-markdown").getByText("Hello search target"),
   ).toBeVisible();
 
   await canvas.focus();
@@ -26,7 +26,10 @@ test("Node browser search focuses and reveals a canvas Node", async ({
   await expect(browser.getByText("No matching nodes")).toHaveCount(0);
 
   await browser.getByLabel("Search nodes").press("Enter");
-  await expect(canvas).toHaveAttribute("aria-activedescendant", /node-/);
+  await expect(canvas).toHaveAttribute(
+    "aria-activedescendant",
+    /canvas-active-/,
+  );
 
   await browser.getByLabel("Search nodes").fill("zzzz-none");
   await expect(browser.getByText("No matching nodes")).toBeVisible();

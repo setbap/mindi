@@ -10,12 +10,12 @@ test("Focused typing commits and survives reload", async ({ page }) => {
   await editor.fill("Hello");
   await page.keyboard.press("Enter");
   await expect(
-    page.getByTestId("map-canvas").getByText("Hello"),
+    page.getByTestId("safe-markdown").getByText("Hello"),
   ).toBeVisible();
 
   await page.reload();
   await expect(
-    page.getByTestId("map-canvas").getByText("Hello"),
+    page.getByTestId("safe-markdown").getByText("Hello"),
   ).toBeVisible();
 });
 

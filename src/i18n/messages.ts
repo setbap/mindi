@@ -58,7 +58,27 @@ export type MessageKey =
   | "openMap"
   | "mapNodes"
   | "paletteSlots"
-  | "searchPlaceholder";
+  | "searchPlaceholder"
+  | "exportMap"
+  | "exportAllMaps"
+  | "importMaps"
+  | "importSelected"
+  | "importInvalidMaps"
+  | "selectImportMaps"
+  | "importFailed"
+  | "selectAtLeastOneMap"
+  | "restorePalette"
+  | "installMindi"
+  | "notNow"
+  | "offlineReady"
+  | "updateReady"
+  | "reloadUpdate"
+  | "later"
+  | "editingDraftUpdate"
+  | "finishEditing"
+  | "discardDraftReload"
+  | "largeMapWarning"
+  | "layingOut";
 
 type Messages = Record<MessageKey, string>;
 
@@ -124,6 +144,26 @@ const en: Messages = {
   mapNodes: "Map nodes",
   paletteSlots: "Palette slots",
   searchPlaceholder: "Search…",
+  exportMap: "Export Map",
+  exportAllMaps: "Export all Maps",
+  importMaps: "Import Maps",
+  importSelected: "Import selected",
+  importInvalidMaps: "Invalid Maps",
+  selectImportMaps: "Select Maps to import",
+  importFailed: "Import failed",
+  selectAtLeastOneMap: "Select at least one valid Map to import.",
+  restorePalette: "Replace the current Palette with the file snapshot",
+  installMindi: "Install Mindi",
+  notNow: "Not now",
+  offlineReady: "Mindi is ready to work offline",
+  updateReady: "Update ready",
+  reloadUpdate: "Reload update",
+  later: "Later",
+  editingDraftUpdate: "Finish editing or discard the draft before reloading.",
+  finishEditing: "Finish editing",
+  discardDraftReload: "Discard draft and reload",
+  largeMapWarning: "This Map has 512 or more Nodes. Performance may slow.",
+  layingOut: "Laying out",
 };
 
 const fa: Messages = {
@@ -188,6 +228,27 @@ const fa: Messages = {
   mapNodes: "گره‌های نقشه",
   paletteSlots: "اسلات‌های پالت",
   searchPlaceholder: "جستجو…",
+  exportMap: "برون‌بری نقشه",
+  exportAllMaps: "برون‌بری همهٔ نقشه‌ها",
+  importMaps: "درون‌ریزی نقشه‌ها",
+  importSelected: "درون‌ریزی انتخاب‌شده‌ها",
+  importInvalidMaps: "نقشه‌های نامعتبر",
+  selectImportMaps: "نقشه‌های درون‌ریزی را انتخاب کنید",
+  importFailed: "درون‌ریزی ناموفق بود",
+  selectAtLeastOneMap: "دست‌کم یک نقشهٔ معتبر را برای درون‌ریزی انتخاب کنید.",
+  restorePalette: "پالت کنونی را با تصویر پالتِ فایل جایگزین کن",
+  installMindi: "نصب میندی",
+  notNow: "فعلاً نه",
+  offlineReady: "میندی برای کار آفلاین آماده است",
+  updateReady: "به‌روزرسانی آماده است",
+  reloadUpdate: "بارگذاری دوباره و به‌روزرسانی",
+  later: "بعداً",
+  editingDraftUpdate:
+    "پیش از بارگذاری دوباره، ویرایش را تمام کنید یا پیش‌نویس را کنار بگذارید.",
+  finishEditing: "پایان ویرایش",
+  discardDraftReload: "کنار گذاشتن پیش‌نویس و بارگذاری دوباره",
+  largeMapWarning: "این نقشه ۵۱۲ گره یا بیشتر دارد. ممکن است عملکرد کند شود.",
+  layingOut: "در حال چیدمان",
 };
 
 const tables: Record<Language, Messages> = { en, fa };

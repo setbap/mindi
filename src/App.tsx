@@ -1,21 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 
-import {
-  MapCanvas,
-  type MapCanvasHandle,
-} from "@/components/map-canvas";
+import { MapCanvas, type MapCanvasHandle } from "@/components/map-canvas";
 import { MapManager } from "@/components/map-manager";
 import { NodeBrowser } from "@/components/node-browser";
 import { StructureCommands } from "@/components/structure-commands";
 import { StructureLiveRegion } from "@/components/structure-live-region";
 import { StyleCommands } from "@/components/style-commands";
 import { Button } from "@/components/ui/button";
-import { focusedIdOf } from "@/domain/interaction";
+import { focusedIdOf, isEditing } from "@/domain/interaction";
 import type { Language } from "@/domain/types";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
 import { I18nProvider, useI18n } from "@/i18n/i18n-context";
 import { t as translate } from "@/i18n/t";
 import { bindVisibleViewport } from "@/shell/bind-visible-viewport";
+import { PwaControls } from "@/pwa/pwa-controls";
 import { useMindiApp, type MindiAppController } from "./app/use-mindi-app";
 
 type ReadyController = MindiAppController & {
@@ -66,6 +64,8 @@ function ReadyApp({ app }: { app: ReadyController }) {
     renameMap,
     switchMap,
     deleteMap,
+    importMaps,
+    exportMindiJson,
     focusNode,
     startEditing,
     setDraft,
@@ -212,6 +212,8 @@ function ReadyApp({ app }: { app: ReadyController }) {
           </div>
         </header>
 
+        <PwaControls editing={isEditing(mode)} onDiscardDraft={cancelEdit} />
+
         {isDesktop ? (
           <div className="flex shrink-0 flex-col gap-2">{commands}</div>
         ) : null}
@@ -256,6 +258,8 @@ function ReadyApp({ app }: { app: ReadyController }) {
           onRename={renameMap}
           onSwitch={switchMap}
           onDelete={deleteMap}
+          onImport={importMaps}
+          onExport={exportMindiJson}
         />
       </div>
 

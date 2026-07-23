@@ -21,5 +21,6 @@ export const MAP_CANVAS_FLOW_PROPS = {
   selectionKeyCode: null,
   multiSelectionKeyCode: null,
   disableKeyboardA11y: true,
+  onlyRenderVisibleElements: true,
   proOptions: { hideAttribution: true },
 } as const satisfies Partial<ReactFlowProps>;

@@ -39,6 +39,11 @@ import {
   type NodeSize,
 } from "@/layout/layout-map";
 import {
+  createLatestLayoutScheduler,
+  layoutScalePolicy,
+  type LatestLayoutScheduler,
+} from "@/layout/scale-policy";
+import {
   MINDI_NODE_TYPE,
   projectLayoutToFlow,
   type FlowEdgeData,
@@ -184,6 +189,7 @@ function MindiFlowNode({ id }: NodeProps<Node<FlowNodeData>>) {
 
 const nodeTypes = { [MINDI_NODE_TYPE]: MindiFlowNode };
 const edgeTypes = { smoothstep: ConnectorEdge };
+const EMPTY_LAYOUT: LayoutResult = { nodes: [], edges: [] };
 
 function MapCanvasFlow({
   map,
@@ -211,7 +217,16 @@ function MapCanvasFlow({
   const nodesInitialized = useNodesInitialized();
   const [measured, setMeasured] = useState<Record<string, NodeSize>>({});
   const [didFit, setDidFit] = useState(false);
+  const [deferredLayout, setDeferredLayout] = useState<{
+    mapId: string;
+    result: LayoutResult;
+  } | null>(null);
+  const [layingOut, setLayingOut] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
+  const layoutSchedulerRef = useRef<LatestLayoutScheduler | null>(null);
+  if (!layoutSchedulerRef.current) {
+    layoutSchedulerRef.current = createLatestLayoutScheduler();
+  }
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -265,10 +280,38 @@ function MapCanvasFlow({
     });
   }, []);
 
-  const layout: LayoutResult = useMemo(
-    () => layoutMap(map, sizesForMap(map, measured)),
+  const nodeCount = Object.keys(map.nodes).length;
+  const scalePolicy = layoutScalePolicy(nodeCount, prefersReducedMotion);
+  const layoutSizes = useMemo(
+    () => sizesForMap(map, measured),
     [map, measured],
   );
+  const immediateLayout = useMemo(
+    () => (scalePolicy.defer ? null : layoutMap(map, layoutSizes)),
+    [layoutSizes, map, scalePolicy.defer],
+  );
+  const layout =
+    immediateLayout ??
+    (deferredLayout?.mapId === map.id ? deferredLayout.result : EMPTY_LAYOUT);
+
+  useEffect(() => {
+    const scheduler = layoutSchedulerRef.current!;
+    if (!scalePolicy.defer) {
+      scheduler.cancel();
+      setLayingOut(false);
+      return;
+    }
+
+    setLayingOut(true);
+    scheduler.request(
+      () => layoutMap(map, layoutSizes),
+      (result) => {
+        setDeferredLayout({ mapId: map.id, result });
+        setLayingOut(false);
+      },
+    );
+    return () => scheduler.cancel();
+  }, [layoutSizes, map, scalePolicy.defer]);
 
   const { nodes, edges } = useMemo(
     () => projectLayoutToFlow(layout, { focusedId }),
@@ -278,12 +321,32 @@ function MapCanvasFlow({
   const allMeasured = Object.keys(map.nodes).every((id) => measured[id]);
 
   useEffect(() => {
-    if (!nodesInitialized || !allMeasured || didFit) {
+    if (!nodesInitialized || didFit) {
       return;
     }
-    void fitView({ padding: 0.2, duration: 0 });
-    setDidFit(true);
-  }, [nodesInitialized, allMeasured, didFit, fitView]);
+    if (scalePolicy.defer) {
+      if (layingOut || layout.nodes.length === 0) {
+        return;
+      }
+      const timeout = window.setTimeout(() => {
+        void fitView({ padding: 0.2, duration: 0 });
+        setDidFit(true);
+      }, 100);
+      return () => window.clearTimeout(timeout);
+    }
+    if (allMeasured) {
+      void fitView({ padding: 0.2, duration: 0 });
+      setDidFit(true);
+    }
+  }, [
+    nodesInitialized,
+    allMeasured,
+    didFit,
+    fitView,
+    scalePolicy.defer,
+    layingOut,
+    layout,
+  ]);
 
   const contextValue = useMemo(
     () => ({
@@ -382,13 +445,30 @@ function MapCanvasFlow({
         role="application"
         tabIndex={0}
         aria-label={t("mapCanvas")}
-        aria-activedescendant={`node-${focusedId}`}
+        aria-activedescendant={`canvas-active-${focusedId}`}
         className={cn(
           "bg-background focus-visible:ring-ring relative h-full min-h-0 w-full overflow-hidden rounded-lg border focus-visible:ring-2 focus-visible:outline-none",
         )}
         onKeyDown={onKeyDown}
         data-testid="map-canvas"
+        data-layout-animation={scalePolicy.animate ? "on" : "off"}
       >
+        <span id={`canvas-active-${focusedId}`} className="sr-only">
+          {map.nodes[focusedId]?.markdown || t("emptyNode")}
+        </span>
+        {scalePolicy.warn ? (
+          <p
+            className="bg-card/95 absolute top-2 right-2 z-10 rounded-md border px-2 py-1 text-xs shadow-sm"
+            role="status"
+          >
+            {t("largeMapWarning")}
+          </p>
+        ) : null}
+        {layingOut ? (
+          <p className="bg-card/95 absolute right-2 bottom-2 z-10 rounded-md border px-2 py-1 text-xs shadow-sm">
+            {t("layingOut")}
+          </p>
+        ) : null}
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -401,7 +481,11 @@ function MapCanvasFlow({
           onEdgesChange={() => {
             /* Connectors are display-only. */
           }}
-          className="h-full w-full"
+          className={cn(
+            "h-full w-full",
+            !scalePolicy.animate &&
+              "[&_.react-flow__node]:!transition-none [&_.react-flow__viewport]:!transition-none",
+          )}
         />
       </div>
     </CanvasNodeContext.Provider>

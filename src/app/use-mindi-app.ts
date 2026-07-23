@@ -9,7 +9,13 @@ import {
 } from "../domain/interaction";
 import { updatePaletteSlot } from "../domain/palette";
 import { setCatalogLanguage } from "../domain/catalog";
-import type { CatalogRecord, ColorSlot, Language, MapRecord } from "../domain/types";
+import { serializeMindiExport } from "../domain/mindi-json";
+import type {
+  CatalogRecord,
+  ColorSlot,
+  Language,
+  MapRecord,
+} from "../domain/types";
 import {
   canRedo as historyCanRedo,
   canUndo as historyCanUndo,
@@ -48,6 +54,11 @@ export interface MindiAppController {
   renameMap: (mapId: string, name: string) => Promise<void>;
   switchMap: (mapId: string) => Promise<void>;
   deleteMap: (mapId: string) => Promise<void>;
+  importMaps: (
+    maps: readonly MapRecord[],
+    palette?: CatalogRecord["palette"],
+  ) => Promise<void>;
+  exportMindiJson: (allMaps: boolean) => Promise<string>;
   focusNode: (nodeId: string) => void;
   startEditing: (nodeId: string) => void;
   setDraft: (value: string) => void;
@@ -134,10 +145,7 @@ export function useMindiApp(
       const interaction = createInitialInteraction(openMap);
       catalogRef.current = catalog;
       interactionRef.current = interaction;
-      historyRef.current = seedHistory(
-        openMap,
-        focusedIdOf(interaction.mode),
-      );
+      historyRef.current = seedHistory(openMap, focusedIdOf(interaction.mode));
       setState(readyFrom(catalog, interaction, historyRef.current));
     },
     [],
@@ -231,6 +239,45 @@ export function useMindiApp(
     },
     [openMapSession],
   );
+
+  const importMaps = useCallback(
+    async (maps: readonly MapRecord[], palette?: CatalogRecord["palette"]) => {
+      const repository = repositoryRef.current;
+      const interaction = interactionRef.current;
+      if (!repository || !interaction) {
+        return;
+      }
+      const catalog = await repository.importMaps(maps, palette);
+      catalogRef.current = catalog;
+      setState(readyFrom(catalog, interaction, historyRef.current));
+    },
+    [],
+  );
+
+  const exportMindiJson = useCallback(async (allMaps: boolean) => {
+    const catalog = catalogRef.current;
+    const interaction = interactionRef.current;
+    const repository = repositoryRef.current;
+    if (!catalog || !interaction || !repository) {
+      throw new Error("Mindi is still loading.");
+    }
+    if (!allMaps) {
+      return serializeMindiExport([interaction.map], catalog.palette);
+    }
+    const maps = await Promise.all(
+      catalog.maps.map(async (entry) => {
+        if (entry.id === interaction.map.id) {
+          return interaction.map;
+        }
+        const map = await repository.loadMap(entry.id);
+        if (!map) {
+          throw new Error(`Map ${entry.id} is missing from persistence.`);
+        }
+        return map;
+      }),
+    );
+    return serializeMindiExport(maps, catalog.palette);
+  }, []);
 
   const focusNode = useCallback(
     (nodeId: string) => dispatch({ type: "focus", nodeId }),
@@ -386,6 +433,8 @@ export function useMindiApp(
     renameMap,
     switchMap,
     deleteMap,
+    importMaps,
+    exportMindiJson,
     focusNode,
     startEditing,
     setDraft,
