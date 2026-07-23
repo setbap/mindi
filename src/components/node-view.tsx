@@ -2,10 +2,13 @@ import {
   useEffect,
   useRef,
   useState,
+  type ClipboardEvent,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { SafeMarkdown } from "@/components/safe-markdown";
+import { normalizeClipboardPlainText } from "@/domain/clipboard";
 import type { InteractionMode } from "@/domain/interaction";
 import { nodeLabel } from "@/domain/node-browser";
 import {
@@ -93,6 +96,23 @@ export function NodeView({
     }
   }
 
+  function onEditorPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    const raw = event.clipboardData.getData("text/plain");
+    const inserted = normalizeClipboardPlainText(raw);
+    const el = event.currentTarget;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const next = `${el.value.slice(0, start)}${inserted}${el.value.slice(end)}`;
+    onDraftChange(next);
+    const caret = start + inserted.length;
+    requestAnimationFrame(() => {
+      el.selectionStart = caret;
+      el.selectionEnd = caret;
+    });
+  }
+
   function onResizePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
@@ -156,12 +176,13 @@ export function NodeView({
             onChange={(event) => onDraftChange(event.target.value)}
             onClick={(event) => event.stopPropagation()}
             onKeyDown={onEditorKeyDown}
+            onPaste={onEditorPaste}
           />
         </label>
       ) : (
-        <p
+        <div
           className={cn(
-            "min-h-6 text-sm whitespace-pre-wrap",
+            "min-h-6 text-sm",
             node.markdown === "" && "text-muted-foreground italic",
           )}
           dir="auto"
@@ -174,8 +195,15 @@ export function NodeView({
             onFocus(node.id);
           }}
         >
-          {node.markdown === "" ? "Start typing…" : node.markdown}
-        </p>
+          {node.markdown === "" ? (
+            "Start typing…"
+          ) : (
+            <SafeMarkdown
+              markdown={node.markdown}
+              className="[&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1"
+            />
+          )}
+        </div>
       )}
 
       {isDesktop && isFocused && !isEditing ? (
