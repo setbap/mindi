@@ -102,10 +102,13 @@ export function reduceInteraction(
         if (!map.nodes[action.nodeId]) {
           return { ...snapshot, dirty: false };
         }
+        const nextMap = commitNodeMarkdown(map, mode.focusedId, mode.draft);
         return {
-          map,
+          map: nextMap,
           mode: { kind: "focused", focusedId: action.nodeId },
-          dirty: false,
+          dirty:
+            nextMap.nodes[mode.focusedId].markdown !==
+            map.nodes[mode.focusedId].markdown,
         };
       }
       case "setDraft":
@@ -131,10 +134,13 @@ export function reduceInteraction(
         return {
           map: nextMap,
           mode: { kind: "focused", focusedId: mode.focusedId },
-          dirty: true,
+          dirty:
+            nextMap.nodes[mode.focusedId].markdown !==
+            map.nodes[mode.focusedId].markdown,
         };
       }
       case "cancel":
+        // Reserved for explicit discard (e.g. PWA update gate). Escape commits.
         return {
           map,
           mode: { kind: "focused", focusedId: mode.focusedId },

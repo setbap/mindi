@@ -121,16 +121,20 @@ export function useMindiApp(
         map: next.map,
         focusedId: focusedIdOf(next.mode),
       });
-      await repositoryRef.current?.saveMap(next.map);
-    }
-    if (seq !== commitSeq.current) {
-      return;
     }
     const catalog = catalogRef.current;
     if (!catalog) {
       return;
     }
-    setState(readyFrom(catalog, interactionRef.current, historyRef.current));
+    // Update UI before awaiting persistence so focus/reveal stay snappy
+    // (create/arrow must not wait on IndexedDB).
+    setState(readyFrom(catalog, next, historyRef.current));
+    if (next.dirty) {
+      await repositoryRef.current?.saveMap(next.map);
+      if (seq !== commitSeq.current) {
+        return;
+      }
+    }
   }, []);
 
   const dispatch = useCallback(

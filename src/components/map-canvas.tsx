@@ -19,8 +19,9 @@ import {
   ReactFlow,
   ReactFlowProvider,
   SmoothStepEdge,
-  useNodesInitialized,
   useReactFlow,
+  useStore,
+  useStoreApi,
   type Edge,
   type EdgeProps,
   type Node,
@@ -62,8 +63,6 @@ interface MapCanvasProps {
   onDraftChange: (value: string) => void;
   onCommit: () => void;
   onCancel: () => void;
-  onCreateSibling: () => void;
-  onCreateChild: () => void;
   onTypeCharacter: (value: string) => void;
   onArrow: (direction: "up" | "down" | "left" | "right") => void;
   onMoveUp: () => void;
@@ -202,8 +201,6 @@ function MapCanvasFlow({
   onDraftChange,
   onCommit,
   onCancel,
-  onCreateSibling,
-  onCreateChild,
   onTypeCharacter,
   onArrow,
   onMoveUp,
@@ -215,8 +212,10 @@ function MapCanvasFlow({
   const { t } = useI18n();
   const focusedId = focusedIdOf(mode);
   const editing = isEditing(mode);
-  const { fitView, getNode, setCenter, getZoom } = useReactFlow();
-  const nodesInitialized = useNodesInitialized();
+  const { getNode, setCenter, getZoom, viewportInitialized } = useReactFlow();
+  const storeApi = useStoreApi();
+  const paneWidth = useStore((state) => state.width);
+  const paneHeight = useStore((state) => state.height);
   const [measured, setMeasured] = useState<Record<string, NodeSize>>({});
   const [didFit, setDidFit] = useState(false);
   const [deferredLayout, setDeferredLayout] = useState<{
@@ -226,7 +225,9 @@ function MapCanvasFlow({
   const [layingOut, setLayingOut] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const keepHostFocusedRef = useRef(false);
-  const revealFocusedRef = useRef(false);
+  const prevFocusedIdRef = useRef<string | null>(null);
+  const didFitRef = useRef(false);
+  const layoutRef = useRef<LayoutResult>(EMPTY_LAYOUT);
   const layoutSchedulerRef = useRef<LatestLayoutScheduler | null>(null);
   if (!layoutSchedulerRef.current) {
     layoutSchedulerRef.current = createLatestLayoutScheduler();
@@ -241,24 +242,60 @@ function MapCanvasFlow({
   useEffect(() => {
     setMeasured({});
     setDidFit(false);
+    didFitRef.current = false;
+    prevFocusedIdRef.current = null;
   }, [map.id]);
 
   const revealNode = useCallback(
-    (nodeId: string) => {
-      const node = getNode(nodeId);
-      if (!node) {
-        return;
-      }
-      const width = node.width ?? node.measured?.width ?? 280;
-      const height = node.height ?? node.measured?.height ?? 48;
-      const x = node.position.x + width / 2;
-      const y = node.position.y + height / 2;
-      void setCenter(x, y, {
-        zoom: getZoom(),
-        duration: prefersReducedMotion ? 0 : 200,
-      });
+    (
+      nodeId: string,
+      options?: {
+        duration?: number;
+        onCentered?: () => void;
+      },
+    ) => {
+      const duration =
+        options?.duration ?? (prefersReducedMotion ? 0 : 200);
+      // Prefer setCenter over fitView: fitView ignores Nodes until RF has
+      // measured them, which leaves the initial viewport stuck at origin.
+      const tryReveal = (attemptsLeft: number) => {
+        const { width: paneW, height: paneH, panZoom } = storeApi.getState();
+        if (!panZoom || paneW < 40 || paneH < 40) {
+          if (attemptsLeft > 0) {
+            requestAnimationFrame(() => tryReveal(attemptsLeft - 1));
+          }
+          return;
+        }
+        const node = getNode(nodeId);
+        const layoutRect = layoutRef.current.nodes.find(
+          (entry) => entry.id === nodeId,
+        );
+        if (!node && !layoutRect) {
+          if (attemptsLeft > 0) {
+            requestAnimationFrame(() => tryReveal(attemptsLeft - 1));
+          }
+          return;
+        }
+        const width =
+          node?.width ?? node?.measured?.width ?? layoutRect?.width ?? 280;
+        const height =
+          node?.height ?? node?.measured?.height ?? layoutRect?.height ?? 48;
+        const x = (node?.position.x ?? layoutRect!.x) + width / 2;
+        const y = (node?.position.y ?? layoutRect!.y) + height / 2;
+        void setCenter(x, y, {
+          zoom: Math.max(getZoom() || 1, 0.85),
+          duration,
+        }).then((ok) => {
+          if (ok) {
+            options?.onCentered?.();
+          } else if (attemptsLeft > 0) {
+            requestAnimationFrame(() => tryReveal(attemptsLeft - 1));
+          }
+        });
+      };
+      tryReveal(120);
     },
-    [getNode, getZoom, prefersReducedMotion, setCenter],
+    [getNode, getZoom, prefersReducedMotion, setCenter, storeApi],
   );
 
   useImperativeHandle(
@@ -325,6 +362,7 @@ function MapCanvasFlow({
   const layout =
     immediateLayout ??
     (deferredLayout?.mapId === map.id ? deferredLayout.result : EMPTY_LAYOUT);
+  layoutRef.current = layout;
 
   useEffect(() => {
     const scheduler = layoutSchedulerRef.current!;
@@ -350,45 +388,75 @@ function MapCanvasFlow({
     [layout, focusedId],
   );
 
+  const prevNodeCountRef = useRef(Object.keys(map.nodes).length);
   useEffect(() => {
-    if (!revealFocusedRef.current || !nodesInitialized) {
-      return;
+    const count = Object.keys(map.nodes).length;
+    if (count > prevNodeCountRef.current) {
+      keepHostFocusedRef.current = true;
     }
-    if (!nodes.some((node) => node.id === focusedId)) {
-      return;
-    }
-    revealFocusedRef.current = false;
-    revealNode(focusedId);
-  }, [focusedId, nodesInitialized, nodes, revealNode]);
+    prevNodeCountRef.current = count;
+  }, [map.nodes]);
 
-  const allMeasured = Object.keys(map.nodes).every((id) => measured[id]);
-
+  // Same path as Node browser `onReveal`: when focus moves (arrows, create,
+  // browser, canvas click), center that Node after paint.
   useEffect(() => {
-    if (!nodesInitialized || didFit) {
+    const previous = prevFocusedIdRef.current;
+    prevFocusedIdRef.current = focusedId;
+    if (previous === null || previous === focusedId) {
       return;
     }
-    if (scalePolicy.defer) {
-      if (layingOut || layout.nodes.length === 0) {
-        return;
-      }
-      const timeout = window.setTimeout(() => {
-        void fitView({ padding: 0.2, duration: 0 });
-        setDidFit(true);
-      }, 100);
-      return () => window.clearTimeout(timeout);
+    if (!viewportInitialized || paneWidth < 40 || paneHeight < 40) {
+      return;
     }
-    if (allMeasured) {
-      void fitView({ padding: 0.2, duration: 0 });
-      setDidFit(true);
-    }
+    const raf = window.requestAnimationFrame(() => {
+      revealNode(focusedId);
+    });
+    return () => window.cancelAnimationFrame(raf);
   }, [
-    nodesInitialized,
-    allMeasured,
+    focusedId,
+    revealNode,
+    viewportInitialized,
+    paneWidth,
+    paneHeight,
+  ]);
+
+  const layoutReady = scalePolicy.defer
+    ? !layingOut && layout.nodes.length > 0
+    : layout.nodes.length > 0;
+  const focusedInFlow = nodes.some((node) => node.id === focusedId);
+
+  useEffect(() => {
+    if (
+      didFitRef.current ||
+      !viewportInitialized ||
+      !layoutReady ||
+      !focusedInFlow ||
+      paneWidth < 40 ||
+      paneHeight < 40
+    ) {
+      return;
+    }
+
+    revealNode(focusedId, {
+      duration: 0,
+      onCentered: () => {
+        if (didFitRef.current) {
+          return;
+        }
+        didFitRef.current = true;
+        setDidFit(true);
+      },
+    });
+  }, [
+    viewportInitialized,
+    layoutReady,
+    focusedInFlow,
+    paneWidth,
+    paneHeight,
+    revealNode,
+    focusedId,
     didFit,
-    fitView,
-    scalePolicy.defer,
-    layingOut,
-    layout,
+    nodes,
   ]);
 
   const contextValue = useMemo(
@@ -431,22 +499,6 @@ function MapCanvasFlow({
       onEscapeExit?.();
       return;
     }
-    if (event.key === "Enter") {
-      event.preventDefault();
-      event.stopPropagation();
-      keepHostFocusedRef.current = true;
-      revealFocusedRef.current = true;
-      onCreateSibling();
-      return;
-    }
-    if (event.key === "Tab") {
-      event.preventDefault();
-      event.stopPropagation();
-      keepHostFocusedRef.current = true;
-      revealFocusedRef.current = true;
-      onCreateChild();
-      return;
-    }
     if (event.key === " " || event.key === "Spacebar") {
       event.preventDefault();
       onStartEditing(focusedId);
@@ -454,7 +506,6 @@ function MapCanvasFlow({
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      revealFocusedRef.current = true;
       if (event.altKey) {
         onMoveUp();
         return;
@@ -464,7 +515,6 @@ function MapCanvasFlow({
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      revealFocusedRef.current = true;
       if (event.altKey) {
         onMoveDown();
         return;
@@ -474,13 +524,11 @@ function MapCanvasFlow({
     }
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      revealFocusedRef.current = true;
       onArrow("left");
       return;
     }
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      revealFocusedRef.current = true;
       onArrow("right");
       return;
     }

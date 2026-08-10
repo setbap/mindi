@@ -92,7 +92,22 @@ describe("Focused and Editing interaction", () => {
     expect(next.dirty).toBe(true);
   });
 
-  it("Escape while Editing discards the draft", () => {
+  it("Escape while Editing commits the draft", () => {
+    const map = createUntitledMap("map-1");
+    let snapshot = createInitialInteraction(map);
+    snapshot = reduceInteraction(snapshot, {
+      type: "typeCharacter",
+      value: "X",
+    });
+
+    const next = reduceInteraction(snapshot, { type: "commit" });
+
+    expect(next.mode.kind).toBe("focused");
+    expect(next.map.nodes[map.rootIds[0]].markdown).toBe("X");
+    expect(next.dirty).toBe(true);
+  });
+
+  it("cancel while Editing still discards for explicit abandon paths", () => {
     const map = createUntitledMap("map-1");
     let snapshot = createInitialInteraction(map);
     snapshot = reduceInteraction(snapshot, {
@@ -105,6 +120,30 @@ describe("Focused and Editing interaction", () => {
     expect(next.mode.kind).toBe("focused");
     expect(next.map.nodes[map.rootIds[0]].markdown).toBe("");
     expect(next.dirty).toBe(false);
+  });
+
+  it("focusing another Node while Editing commits the draft", () => {
+    const map = createUntitledMap("map-1");
+    let snapshot = createInitialInteraction(map);
+    snapshot = reduceInteraction(snapshot, { type: "createSibling" });
+    const siblingId = snapshot.mode.focusedId;
+    snapshot = reduceInteraction(snapshot, {
+      type: "focus",
+      nodeId: map.rootIds[0],
+    });
+    snapshot = reduceInteraction(snapshot, {
+      type: "typeCharacter",
+      value: "Kept",
+    });
+
+    const next = reduceInteraction(snapshot, {
+      type: "focus",
+      nodeId: siblingId,
+    });
+
+    expect(next.mode).toEqual({ kind: "focused", focusedId: siblingId });
+    expect(next.map.nodes[map.rootIds[0]].markdown).toBe("Kept");
+    expect(next.dirty).toBe(true);
   });
 
   it("Tab while Editing inserts indentation", () => {

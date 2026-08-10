@@ -58,7 +58,8 @@ The canvas and Node browser always share the Map's Focused ID. Click/tap focuses
 | Space while Focused | Enter Editing with the current markdown draft. |
 | Typing while Focused | Enter Editing with that typed input. |
 | Enter while Editing | Commit raw Markdown and return to Focused. |
-| Escape while Editing | Discard the draft and return to Focused. |
+| Escape while Editing | Commit raw Markdown and return to Focused (drafts are not discarded). |
+| Blur / focus another Node while Editing | Commit raw Markdown, then apply the focus change. |
 | Tab while Editing | Insert indentation. |
 
 ### Structure and order

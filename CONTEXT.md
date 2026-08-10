@@ -97,7 +97,7 @@ A Node is selected for navigation/commands but not text-editing. Every Map has e
 _Avoid_: Selected (when you mean the focused-not-editing state specifically)
 
 **Editing**:
-A Node has an active text cursor; raw markdown is shown. Enter commits and returns to **Focused**; Escape discards the draft and returns to **Focused**; Tab inserts indentation.
+A Node has an active text cursor; raw markdown is shown. Enter, Escape, and click/focus away all commit the draft and return to **Focused**. Tab inserts indentation. Drafts are not discarded.
 _Avoid_: Active, Input mode
 
 **Viewport**:

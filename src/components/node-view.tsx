@@ -42,7 +42,7 @@ export function NodeView({
   onStartEditing,
   onDraftChange,
   onCommit,
-  onCancel,
+  onCancel: _onCancel,
   onCommitWidth,
   onPreviewWidth,
 }: NodeViewProps) {
@@ -81,7 +81,7 @@ export function NodeView({
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      onCancel();
+      onCommit();
       return;
     }
     if (event.key === "Tab") {
@@ -97,6 +97,13 @@ export function NodeView({
         el.selectionEnd = start + 2;
       });
     }
+  }
+
+  function onEditorBlur() {
+    if (!isEditing) {
+      return;
+    }
+    onCommit();
   }
 
   function onEditorPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
@@ -179,6 +186,7 @@ export function NodeView({
             onChange={(event) => onDraftChange(event.target.value)}
             onClick={(event) => event.stopPropagation()}
             onKeyDown={onEditorKeyDown}
+            onBlur={onEditorBlur}
             onPaste={onEditorPaste}
           />
         </label>

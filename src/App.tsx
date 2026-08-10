@@ -93,15 +93,25 @@ function ReadyApp({ app }: { app: ReadyController }) {
   } = app;
   const { t, language } = useI18n();
   const isDesktop = useIsDesktop();
+  const { catalog, openMap, mode, canUndo, canRedo } = state;
   const [managerOpen, setManagerOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(openMap.name);
   const canvasRef = useRef<MapCanvasHandle>(null);
   const shellRef = useRef<HTMLElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const focusedIdRef = useRef(focusedIdOf(state.mode));
-  const { catalog, openMap, mode, canUndo, canRedo } = state;
   const dir = chromeDir(language);
   const lang = chromeLang(language);
+  const editing = isEditing(mode);
 
   focusedIdRef.current = focusedIdOf(mode);
+
+  useEffect(() => {
+    if (!renaming) {
+      setRenameDraft(openMap.name);
+    }
+  }, [openMap.name, renaming]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -119,8 +129,62 @@ function ReadyApp({ app }: { app: ReadyController }) {
     });
   }, []);
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (managerOpen) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      if (target.closest("textarea")) {
+        return;
+      }
+      if (target.closest('[data-map-rename="true"]')) {
+        return;
+      }
+      if (target.closest('[role="dialog"], [data-radix-portal]')) {
+        return;
+      }
+      if (
+        target.closest(
+          'input[type="search"], input[type="text"], input[type="number"], input:not([type]), input[type="color"]',
+        )
+      ) {
+        return;
+      }
+      if (target.closest("select, [contenteditable='true']")) {
+        return;
+      }
+      if (editing) {
+        return;
+      }
+      if (event.key === "Tab" && !event.altKey && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault();
+        createChild();
+        canvasRef.current?.focusHost();
+        return;
+      }
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        !event.ctrlKey
+      ) {
+        event.preventDefault();
+        createSibling();
+        canvasRef.current?.focusHost();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [editing, createChild, createSibling, managerOpen]);
+
   function revealOnCanvas(nodeId: string) {
     focusNode(nodeId);
+    canvasRef.current?.focusHost();
     requestAnimationFrame(() => {
       canvasRef.current?.revealNode(nodeId);
     });
@@ -133,6 +197,64 @@ function ReadyApp({ app }: { app: ReadyController }) {
       )
       ?.focus();
   }
+
+  function beginRename() {
+    setRenameDraft(openMap.name);
+    setRenaming(true);
+    requestAnimationFrame(() => {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    });
+  }
+
+  function commitRename() {
+    const next = renameDraft.trim();
+    setRenaming(false);
+    if (next.length > 0 && next !== openMap.name) {
+      void renameMap(openMap.id, next);
+    } else {
+      setRenameDraft(openMap.name);
+    }
+    canvasRef.current?.focusHost();
+  }
+
+  const mapTitle = renaming ? (
+    <input
+      ref={renameInputRef}
+      data-map-rename="true"
+      data-testid="map-title-input"
+      aria-label={t("renameMap", { name: openMap.name })}
+      className="border-input bg-background focus-visible:ring-ring w-full min-w-0 rounded-md border px-2 py-1 text-sm font-semibold focus-visible:ring-2 focus-visible:outline-none"
+      value={renameDraft}
+      onChange={(event) => setRenameDraft(event.target.value)}
+      onBlur={commitRename}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.stopPropagation();
+          commitRename();
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          // Escape also saves per product rule for drafts.
+          commitRename();
+        }
+      }}
+    />
+  ) : (
+    <h1 className="truncate text-sm font-semibold leading-tight">
+      <button
+        type="button"
+        className="hover:text-primary max-w-full truncate text-start"
+        onClick={beginRename}
+        data-testid="map-title"
+      >
+        {openMap.name}
+      </button>
+    </h1>
+  );
 
   const mobileCommands = (
     <>
@@ -177,8 +299,6 @@ function ReadyApp({ app }: { app: ReadyController }) {
         onDraftChange={setDraft}
         onCommit={commitEdit}
         onCancel={cancelEdit}
-        onCreateSibling={createSibling}
-        onCreateChild={createChild}
         onTypeCharacter={typeCharacter}
         onArrow={arrow}
         onMoveUp={moveUp}
@@ -216,13 +336,11 @@ function ReadyApp({ app }: { app: ReadyController }) {
 
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <header className="border-border flex h-11 shrink-0 items-center gap-3 border-b px-4">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-muted-foreground text-xs leading-none">
                     {t("brand")}
                   </p>
-                  <h1 className="truncate text-sm font-semibold leading-tight">
-                    {openMap.name}
-                  </h1>
+                  {mapTitle}
                 </div>
               </header>
               <div className="relative min-h-0 min-w-0 flex-1">
@@ -271,9 +389,38 @@ function ReadyApp({ app }: { app: ReadyController }) {
         ) : (
           <>
             <header className="flex shrink-0 items-center justify-between gap-4 p-3">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-sm">{t("brand")}</p>
-                <h1 className="text-2xl font-semibold">{openMap.name}</h1>
+                {renaming ? (
+                  <input
+                    ref={renameInputRef}
+                    data-map-rename="true"
+                    data-testid="map-title-input"
+                    aria-label={t("renameMap", { name: openMap.name })}
+                    className="border-input bg-background focus-visible:ring-ring w-full max-w-sm rounded-md border px-2 py-1 text-2xl font-semibold focus-visible:ring-2 focus-visible:outline-none"
+                    value={renameDraft}
+                    onChange={(event) => setRenameDraft(event.target.value)}
+                    onBlur={commitRename}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === "Escape") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        commitRename();
+                      }
+                    }}
+                  />
+                ) : (
+                  <h1 className="text-2xl font-semibold">
+                    <button
+                      type="button"
+                      className="hover:text-primary text-start"
+                      onClick={beginRename}
+                      data-testid="map-title"
+                    >
+                      {openMap.name}
+                    </button>
+                  </h1>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-2 text-sm">
