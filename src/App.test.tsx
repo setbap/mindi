@@ -174,14 +174,14 @@ describe("App Focused and Editing", () => {
     await waitFor(() => {
       expect(canvasNodes()).toHaveLength(2);
     });
+    expect(screen.queryByLabelText("Node markdown")).not.toBeInTheDocument();
 
-    await user.keyboard("{Escape}");
-    canvas.focus();
     await user.keyboard("{Tab}");
 
     await waitFor(() => {
       expect(canvasNodes().length).toBeGreaterThanOrEqual(3);
     });
+    expect(screen.queryByLabelText("Node markdown")).not.toBeInTheDocument();
   });
 });
 
@@ -218,7 +218,6 @@ describe("App structure commands", () => {
     const canvas = screen.getByTestId("map-canvas");
     canvas.focus();
     await user.keyboard("{Tab}");
-    await user.keyboard("{Escape}");
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Detach" })).not.toBeDisabled();

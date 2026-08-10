@@ -10,13 +10,12 @@ test("structure commands create Root, move, detach, and guard final Delete", asy
   await page.getByRole("button", { name: "Create Root" }).click();
   await expect(page.locator(".react-flow__node")).toHaveCount(2);
 
-  // Create a child under the new Root via Focused Tab, then leave Editing.
+  // Create a child under the new Root via Focused Tab (stays Focused).
   const canvas = page.getByTestId("map-canvas");
   await canvas.focus();
   await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Node markdown")).toBeVisible();
-  await page.keyboard.press("Escape");
   await expect(page.getByLabel("Node markdown")).toHaveCount(0);
+  await expect(page.locator(".react-flow__node")).toHaveCount(3);
 
   await expect(page.getByRole("button", { name: "Detach" })).toBeEnabled();
   await page.getByRole("button", { name: "Detach" }).click();

@@ -194,9 +194,8 @@ export function reduceInteraction(
       return {
         map: nextMap,
         mode: {
-          kind: "editing",
+          kind: "focused",
           focusedId: newNodeId,
-          draft: "",
         },
         dirty: true,
       };
@@ -206,9 +205,8 @@ export function reduceInteraction(
       return {
         map: nextMap,
         mode: {
-          kind: "editing",
+          kind: "focused",
           focusedId: newNodeId,
-          draft: "",
         },
         dirty: true,
       };

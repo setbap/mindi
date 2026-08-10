@@ -225,6 +225,8 @@ function MapCanvasFlow({
   } | null>(null);
   const [layingOut, setLayingOut] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
+  const keepHostFocusedRef = useRef(false);
+  const revealFocusedRef = useRef(false);
   const layoutSchedulerRef = useRef<LatestLayoutScheduler | null>(null);
   if (!layoutSchedulerRef.current) {
     layoutSchedulerRef.current = createLatestLayoutScheduler();
@@ -282,6 +284,34 @@ function MapCanvasFlow({
     });
   }, []);
 
+  const focusNodeOnCanvas = useCallback(
+    (nodeId: string) => {
+      onFocus(nodeId);
+      hostRef.current?.focus({ preventScroll: true });
+    },
+    [onFocus],
+  );
+
+  useEffect(() => {
+    if (!editing) {
+      return;
+    }
+    return () => {
+      // Restore keyboard host when leaving Editing (textarea unmounts).
+      queueMicrotask(() => {
+        hostRef.current?.focus({ preventScroll: true });
+      });
+    };
+  }, [editing]);
+
+  useEffect(() => {
+    if (!keepHostFocusedRef.current || editing) {
+      return;
+    }
+    keepHostFocusedRef.current = false;
+    hostRef.current?.focus({ preventScroll: true });
+  }, [focusedId, editing, map]);
+
   const nodeCount = Object.keys(map.nodes).length;
   const scalePolicy = layoutScalePolicy(nodeCount, prefersReducedMotion);
   const layoutSizes = useMemo(
@@ -320,6 +350,17 @@ function MapCanvasFlow({
     [layout, focusedId],
   );
 
+  useEffect(() => {
+    if (!revealFocusedRef.current || !nodesInitialized) {
+      return;
+    }
+    if (!nodes.some((node) => node.id === focusedId)) {
+      return;
+    }
+    revealFocusedRef.current = false;
+    revealNode(focusedId);
+  }, [focusedId, nodesInitialized, nodes, revealNode]);
+
   const allMeasured = Object.keys(map.nodes).every((id) => measured[id]);
 
   useEffect(() => {
@@ -355,7 +396,7 @@ function MapCanvasFlow({
       map,
       mode,
       palette,
-      onFocus,
+      onFocus: focusNodeOnCanvas,
       onStartEditing,
       onDraftChange,
       onCommit,
@@ -367,7 +408,7 @@ function MapCanvasFlow({
       map,
       mode,
       palette,
-      onFocus,
+      focusNodeOnCanvas,
       onStartEditing,
       onDraftChange,
       onCommit,
@@ -392,16 +433,28 @@ function MapCanvasFlow({
     }
     if (event.key === "Enter") {
       event.preventDefault();
+      event.stopPropagation();
+      keepHostFocusedRef.current = true;
+      revealFocusedRef.current = true;
       onCreateSibling();
       return;
     }
     if (event.key === "Tab") {
       event.preventDefault();
+      event.stopPropagation();
+      keepHostFocusedRef.current = true;
+      revealFocusedRef.current = true;
       onCreateChild();
+      return;
+    }
+    if (event.key === " " || event.key === "Spacebar") {
+      event.preventDefault();
+      onStartEditing(focusedId);
       return;
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
+      revealFocusedRef.current = true;
       if (event.altKey) {
         onMoveUp();
         return;
@@ -411,6 +464,7 @@ function MapCanvasFlow({
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
+      revealFocusedRef.current = true;
       if (event.altKey) {
         onMoveDown();
         return;
@@ -420,11 +474,13 @@ function MapCanvasFlow({
     }
     if (event.key === "ArrowLeft") {
       event.preventDefault();
+      revealFocusedRef.current = true;
       onArrow("left");
       return;
     }
     if (event.key === "ArrowRight") {
       event.preventDefault();
+      revealFocusedRef.current = true;
       onArrow("right");
       return;
     }
@@ -449,7 +505,7 @@ function MapCanvasFlow({
         aria-label={t("mapCanvas")}
         aria-activedescendant={`canvas-active-${focusedId}`}
         className={cn(
-          "map-canvas-host bg-background focus-visible:ring-ring relative h-full min-h-0 w-full overflow-hidden focus-visible:ring-2 focus-visible:outline-none",
+          "map-canvas-host bg-background relative h-full min-h-0 w-full overflow-hidden outline-none",
         )}
         onKeyDown={onKeyDown}
         data-testid="map-canvas"

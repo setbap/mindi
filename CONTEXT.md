@@ -93,7 +93,7 @@ One of nine fixed palette entries. Nodes store a slot number; hex values live on
 _Avoid_: Color, Tag color, Custom color, Hex on the node
 
 **Focused**:
-A Node is selected for navigation/commands but not text-editing. Every Map has exactly one Focused Node. Desktop arrows navigate; Enter creates a sibling immediately below; Tab creates a child; typing enters **Editing**. A click/tap focuses a Node; a second click/tap on its text enters Editing. Focus is shown by a persistent high-contrast ring on canvas and Node browser.
+A Node is selected for navigation/commands but not text-editing. Every Map has exactly one Focused Node. Desktop arrows navigate; Enter creates a sibling immediately below; Tab creates a child; typing or Space enters **Editing**. A click/tap focuses a Node; a second click/tap on its text enters Editing. Focus is shown by a persistent high-contrast ring on the Focused Node (not the whole canvas pane).
 _Avoid_: Selected (when you mean the focused-not-editing state specifically)
 
 **Editing**:

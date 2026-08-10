@@ -112,8 +112,10 @@ export function useMindiApp(
   const catalogRef = useRef<CatalogRecord | null>(null);
   const historyRef = useRef<UndoHistory>(createHistory());
 
+  const commitSeq = useRef(0);
   const commitInteraction = useCallback(async (next: InteractionSnapshot) => {
     interactionRef.current = next;
+    const seq = ++commitSeq.current;
     if (next.dirty) {
       historyRef.current = pushCommand(historyRef.current, {
         map: next.map,
@@ -121,11 +123,14 @@ export function useMindiApp(
       });
       await repositoryRef.current?.saveMap(next.map);
     }
+    if (seq !== commitSeq.current) {
+      return;
+    }
     const catalog = catalogRef.current;
     if (!catalog) {
       return;
     }
-    setState(readyFrom(catalog, next, historyRef.current));
+    setState(readyFrom(catalog, interactionRef.current, historyRef.current));
   }, []);
 
   const dispatch = useCallback(

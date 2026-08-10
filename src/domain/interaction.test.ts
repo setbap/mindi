@@ -17,28 +17,35 @@ describe("Focused and Editing interaction", () => {
     expect(editing.mode.focusedId).toBe(map.rootIds[0]);
   });
 
-  it("Enter while Focused creates a sibling and enters Editing", () => {
-    const map = createUntitledMap("map-1");
-    const snapshot = createInitialInteraction(map);
-
-    const next = reduceInteraction(snapshot, { type: "createSibling" });
-
-    expect(next.mode.kind).toBe("editing");
-    expect(next.map.rootIds).toHaveLength(2);
-    expect(next.mode.focusedId).toBe(next.map.rootIds[1]);
-    expect(next.dirty).toBe(true);
-  });
-
-  it("Tab while Focused creates a child and enters Editing", () => {
+  it("Enter while Focused creates a sibling below and stays Focused", () => {
     const map = createUntitledMap("map-1");
     const rootId = map.rootIds[0];
     const snapshot = createInitialInteraction(map);
 
-    const next = reduceInteraction(snapshot, { type: "createChild" });
+    const next = reduceInteraction(snapshot, { type: "createSibling" });
 
-    expect(next.mode.kind).toBe("editing");
-    expect(next.map.nodes[rootId].childIds).toEqual([next.mode.focusedId]);
+    expect(next.mode.kind).toBe("focused");
+    expect(next.map.rootIds).toHaveLength(2);
+    expect(next.map.rootIds[0]).toBe(rootId);
+    expect(next.mode.focusedId).toBe(next.map.rootIds[1]);
     expect(next.dirty).toBe(true);
+  });
+
+  it("Tab while Focused creates a child and stays Focused for rapid chaining", () => {
+    const map = createUntitledMap("map-1");
+    const rootId = map.rootIds[0];
+    let snapshot = createInitialInteraction(map);
+
+    snapshot = reduceInteraction(snapshot, { type: "createChild" });
+    expect(snapshot.mode.kind).toBe("focused");
+    const child1 = snapshot.mode.focusedId;
+    expect(snapshot.map.nodes[rootId].childIds).toEqual([child1]);
+
+    snapshot = reduceInteraction(snapshot, { type: "createChild" });
+    expect(snapshot.mode.kind).toBe("focused");
+    const child2 = snapshot.mode.focusedId;
+    expect(snapshot.map.nodes[child1].childIds).toEqual([child2]);
+    expect(snapshot.dirty).toBe(true);
   });
 
   it("typing while Focused enters Editing with that character", () => {
@@ -53,6 +60,19 @@ describe("Focused and Editing interaction", () => {
     expect(next.mode).toMatchObject({
       kind: "editing",
       draft: "H",
+    });
+  });
+
+  it("startEditing while Focused opens an empty draft without inserting text", () => {
+    const map = createUntitledMap("map-1");
+    const snapshot = createInitialInteraction(map);
+
+    const next = reduceInteraction(snapshot, { type: "startEditing" });
+
+    expect(next.mode).toEqual({
+      kind: "editing",
+      focusedId: map.rootIds[0],
+      draft: "",
     });
   });
 
@@ -101,7 +121,6 @@ describe("Focused and Editing interaction", () => {
     const map = createUntitledMap("map-1");
     let snapshot = createInitialInteraction(map);
     snapshot = reduceInteraction(snapshot, { type: "createChild" });
-    snapshot = reduceInteraction(snapshot, { type: "cancel" });
     const childId = snapshot.mode.focusedId;
 
     snapshot = reduceInteraction(snapshot, {
@@ -133,11 +152,9 @@ describe("Focused and Editing interaction", () => {
     const map = createUntitledMap("map-1");
     let snapshot = createInitialInteraction(map);
     snapshot = reduceInteraction(snapshot, { type: "createChild" });
-    snapshot = reduceInteraction(snapshot, { type: "cancel" });
     const childId = snapshot.mode.focusedId;
 
     snapshot = reduceInteraction(snapshot, { type: "createSibling" });
-    snapshot = reduceInteraction(snapshot, { type: "cancel" });
     snapshot = reduceInteraction(snapshot, {
       type: "focus",
       nodeId: childId,

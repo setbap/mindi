@@ -53,8 +53,9 @@ The canvas and Node browser always share the Map's Focused ID. Click/tap focuses
 | State/action | Required behavior |
 | --- | --- |
 | Arrow navigation | Navigate the ordered forest according to the defined keyboard model; keep the resulting Focused Node visible by panning only as much as required, never auto-centering. |
-| Enter while Focused | Create an empty sibling immediately below the current Node and enter Editing. |
-| Tab while Focused | Create an empty last child and enter Editing. |
+| Enter while Focused | Create an empty sibling immediately below the current Node and keep Focused (do not enter Editing). |
+| Tab while Focused | Create an empty last child and keep Focused so Tab can chain rapidly. |
+| Space while Focused | Enter Editing with the current markdown draft. |
 | Typing while Focused | Enter Editing with that typed input. |
 | Enter while Editing | Commit raw Markdown and return to Focused. |
 | Escape while Editing | Discard the draft and return to Focused. |
