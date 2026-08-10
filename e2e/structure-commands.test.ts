@@ -24,6 +24,13 @@ test("structure commands create Root, move, detach, and guard final Delete", asy
   await canvas.focus();
   await page.keyboard.press("Alt+ArrowDown");
 
+  // Delete key removes a leaf the same as the Delete button
+  await canvas.focus();
+  await page.keyboard.press("Enter"); // sibling leaf
+  await expect(page.locator(".react-flow__node")).toHaveCount(4);
+  await page.keyboard.press("Delete");
+  await expect(page.locator(".react-flow__node")).toHaveCount(3);
+
   // Delete down to the final Node
   while (await page.getByRole("button", { name: "Delete" }).isEnabled()) {
     const before = await page.locator(".react-flow__node").count();

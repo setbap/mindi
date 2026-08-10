@@ -61,11 +61,12 @@ function RailButton({
       variant="secondary"
       size="sm"
       disabled={disabled}
+      title={label}
+      aria-label={label}
       onClick={onClick}
-      className="h-8 w-full justify-start gap-2 px-2 font-normal"
+      className="size-auto aspect-square w-full p-0"
     >
       {icon}
-      <span className="truncate">{label}</span>
     </Button>
   );
 }
@@ -131,10 +132,11 @@ export function StyleCommands({
 
   const colorSlots = (
     <div
-      className={cn(
-        "flex flex-wrap items-center gap-1",
-        rail && "px-1 py-1",
-      )}
+      className={
+        rail
+          ? "grid grid-cols-4 gap-1 py-0.5"
+          : "flex flex-wrap items-center gap-1.5"
+      }
       role="group"
       aria-label={t("colorSlot")}
     >
@@ -144,10 +146,14 @@ export function StyleCommands({
           type="button"
           aria-label={t("colorSlotN", { n: slot })}
           aria-pressed={focused?.colorSlot === slot}
+          title={t("colorSlotN", { n: slot })}
           disabled={editing || !focused}
           className={cn(
-            "size-6 rounded-sm border border-black/20 disabled:opacity-40",
-            focused?.colorSlot === slot && "ring-ring ring-2",
+            "rounded-[3px] shadow-[inset_0_0_0_1px_rgb(0_0_0_/_0.35)] transition-[box-shadow,transform] disabled:opacity-40",
+            rail ? "aspect-square w-full" : "size-5",
+            "hover:scale-105 hover:shadow-[inset_0_0_0_1px_rgb(0_0_0_/_0.5)]",
+            focused?.colorSlot === slot &&
+              "shadow-[inset_0_0_0_1px_rgb(0_0_0_/_0.45),0_0_0_2px_var(--card),0_0_0_3.5px_var(--ring)]",
           )}
           style={{ backgroundColor: paletteColor(catalog.palette, slot) }}
           onClick={() => onSetColorSlot(slot)}
@@ -222,40 +228,42 @@ export function StyleCommands({
   if (rail) {
     return (
       <div
-        className="flex flex-col gap-1"
+        className="flex w-full flex-col gap-1"
         data-testid="style-commands"
         aria-label={t("styleCommands")}
       >
-        <RailButton
-          label={t("resize")}
-          icon={<Maximize2 />}
-          disabled={editing || !focused}
-          onClick={() => setResizeOpen(true)}
-        />
-        <RailButton
-          label={t("resetWidth")}
-          icon={<RotateCcw />}
-          disabled={editing || !focused}
-          onClick={onResetWidth}
-        />
+        <div className="grid grid-cols-4 gap-1">
+          <RailButton
+            label={t("resize")}
+            icon={<Maximize2 />}
+            disabled={editing || !focused}
+            onClick={() => setResizeOpen(true)}
+          />
+          <RailButton
+            label={t("resetWidth")}
+            icon={<RotateCcw />}
+            disabled={editing || !focused}
+            onClick={onResetWidth}
+          />
+          <RailButton
+            label={t("palette")}
+            icon={<Palette />}
+            onClick={() => setPaletteOpen(true)}
+          />
+          <RailButton
+            label={t("undo")}
+            icon={<Undo2 />}
+            disabled={!canUndo}
+            onClick={onUndo}
+          />
+          <RailButton
+            label={t("redo")}
+            icon={<Redo2 />}
+            disabled={!canRedo}
+            onClick={onRedo}
+          />
+        </div>
         {colorSlots}
-        <RailButton
-          label={t("palette")}
-          icon={<Palette />}
-          onClick={() => setPaletteOpen(true)}
-        />
-        <RailButton
-          label={t("undo")}
-          icon={<Undo2 />}
-          disabled={!canUndo}
-          onClick={onUndo}
-        />
-        <RailButton
-          label={t("redo")}
-          icon={<Redo2 />}
-          disabled={!canRedo}
-          onClick={onRedo}
-        />
         {overlays}
       </div>
     );

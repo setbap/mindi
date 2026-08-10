@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createUntitledMap } from "./forest";
 import {
+  browserTreeGuides,
   buildBrowserForest,
   plainTextFromMarkdown,
   searchNodes,
@@ -45,6 +46,45 @@ describe("buildBrowserForest", () => {
     expect(forest.map((n) => n.id)).toEqual([a, b, c]);
     expect(forest.find((n) => n.id === b)?.ancestorIds).toEqual([a]);
     expect(forest.find((n) => n.id === c)?.ancestorIds).toEqual([a]);
+  });
+});
+
+describe("browserTreeGuides", () => {
+  it("marks continuing stems and last-sibling elbows", () => {
+    const { map, a, b, c } = sampleMap();
+    const forest = buildBrowserForest(map);
+    const guides = browserTreeGuides(forest);
+
+    expect(guides.get(a)).toEqual({ continues: [], isLast: true });
+    expect(guides.get(b)).toEqual({ continues: [false], isLast: false });
+    expect(guides.get(c)).toEqual({ continues: [false], isLast: true });
+  });
+
+  it("keeps a vertical stem through non-last ancestors", () => {
+    let map = createUntitledMap("map-1");
+    const root = map.rootIds[0];
+    const first = createLastChild(map, root);
+    map = first.map;
+    const secondRoot = createSiblingBelow(map, root);
+    map = secondRoot.map;
+    const deep = createLastChild(map, first.newNodeId);
+    map = deep.map;
+
+    const forest = buildBrowserForest(map);
+    const guides = browserTreeGuides(forest);
+
+    expect(guides.get(first.newNodeId)).toEqual({
+      continues: [true],
+      isLast: true,
+    });
+    expect(guides.get(deep.newNodeId)).toEqual({
+      continues: [true, false],
+      isLast: true,
+    });
+    expect(guides.get(secondRoot.newNodeId)).toEqual({
+      continues: [],
+      isLast: true,
+    });
   });
 });
 

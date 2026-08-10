@@ -8,6 +8,7 @@ import { StructureLiveRegion } from "@/components/structure-live-region";
 import { StyleCommands } from "@/components/style-commands";
 import { ToolsPanel } from "@/components/tools-panel";
 import { Button } from "@/components/ui/button";
+import { FolderOpen } from "lucide-react";
 import { focusedIdOf, isEditing } from "@/domain/interaction";
 import type { Language } from "@/domain/types";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
@@ -185,9 +186,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
   function revealOnCanvas(nodeId: string) {
     focusNode(nodeId);
     canvasRef.current?.focusHost();
-    requestAnimationFrame(() => {
-      canvasRef.current?.revealNode(nodeId);
-    });
+    canvasRef.current?.revealNode(nodeId);
   }
 
   function exitCanvasToBrowser() {
@@ -224,7 +223,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
       data-map-rename="true"
       data-testid="map-title-input"
       aria-label={t("renameMap", { name: openMap.name })}
-      className="border-input bg-background focus-visible:ring-ring w-full min-w-0 rounded-md border px-2 py-1 text-sm font-semibold focus-visible:ring-2 focus-visible:outline-none"
+      className="border-input bg-background focus-visible:ring-ring w-full min-w-0 rounded-md border px-2 py-0.5 text-lg font-semibold focus-visible:ring-2 focus-visible:outline-none"
       value={renameDraft}
       onChange={(event) => setRenameDraft(event.target.value)}
       onBlur={commitRename}
@@ -244,7 +243,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
       }}
     />
   ) : (
-    <h1 className="truncate text-sm font-semibold leading-tight">
+    <h1 className="truncate text-lg font-semibold leading-tight">
       <button
         type="button"
         className="hover:text-primary max-w-full truncate text-start"
@@ -323,67 +322,102 @@ function ReadyApp({ app }: { app: ReadyController }) {
         {isDesktop ? (
           <>
             <div
-              className="flex h-full shrink-0 flex-col"
+              className="bg-background flex h-full shrink-0 flex-col gap-2 p-3"
               style={{ width: "var(--dock-width)" }}
             >
-              <NodeBrowser
-                map={openMap}
-                mode={mode}
-                onFocus={focusNode}
-                onReveal={revealOnCanvas}
-              />
-            </div>
-
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <header className="border-border flex h-11 shrink-0 items-center gap-3 border-b px-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-muted-foreground text-xs leading-none">
-                    {t("brand")}
-                  </p>
-                  {mapTitle}
-                </div>
-              </header>
-              <div className="relative min-h-0 min-w-0 flex-1">
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2 p-3 [&_>_*]:pointer-events-auto">
-                  <PwaControls
-                    editing={isEditing(mode)}
-                    onDiscardDraft={cancelEdit}
-                  />
-                </div>
-                <div className="absolute inset-0 min-h-0 min-w-0">{canvas}</div>
+              <div className="border-border bg-card flex shrink-0 items-center rounded-lg border px-3 py-2 shadow-sm">
+                <p
+                  className="text-foreground text-sm font-semibold leading-none"
+                  data-testid="app-brand"
+                >
+                  {t("brand")}
+                </p>
+              </div>
+              <div className="min-h-0 flex-1">
+                <NodeBrowser
+                  map={openMap}
+                  mode={mode}
+                  onFocus={focusNode}
+                  onReveal={revealOnCanvas}
+                />
+              </div>
+              <div
+                className="border-border bg-card shrink-0 rounded-lg border p-2 shadow-sm"
+                data-testid="app-dock-footer"
+              >
+                <section className="flex flex-col gap-1.5">
+                  <h3 className="text-muted-foreground px-0.5 text-[11px] font-semibold tracking-wide uppercase">
+                    {t("toolsSectionApp")}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="size-8 p-0"
+                      title={t("maps")}
+                      aria-label={t("maps")}
+                      onClick={() => setManagerOpen(true)}
+                    >
+                      <FolderOpen />
+                    </Button>
+                    <label className="flex min-w-0 flex-1 items-center">
+                      <span className="sr-only">{t("language")}</span>
+                      <select
+                        aria-label={t("language")}
+                        className="border-input bg-background text-muted-foreground h-8 w-full rounded-md border px-2 text-xs"
+                        value={language}
+                        onChange={(event) => {
+                          void setLanguage(event.target.value as Language);
+                        }}
+                        data-testid="language-select"
+                      >
+                        <option value="en">{t("languageEnglish")}</option>
+                        <option value="fa">{t("languagePersian")}</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
               </div>
             </div>
 
-            <div
-              className="flex h-full shrink-0 flex-col"
-              style={{ width: "var(--inspector-width)" }}
-            >
-              <ToolsPanel
-                map={openMap}
-                mode={mode}
-                catalog={catalog}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onOpenMaps={() => setManagerOpen(true)}
-                onSetLanguage={(next) => {
-                  void setLanguage(next);
-                }}
-                onCreateRoot={createRoot}
-                onMoveUp={moveUp}
-                onMoveDown={moveDown}
-                onMoveUnder={moveUnder}
-                onSwapWithParent={swapWithParent}
-                onDetach={detach}
-                onDelete={deleteNode}
-                onSetWidth={setWidth}
-                onResetWidth={resetWidth}
-                onSetColorSlot={setColorSlot}
-                onUpdatePalette={(slot, hex) => {
-                  void updatePalette(slot, hex);
-                }}
-                onUndo={undo}
-                onRedo={redo}
-              />
+            <div className="relative min-h-0 min-w-0 flex-1">
+              <div className="absolute inset-0 min-h-0 min-w-0">{canvas}</div>
+              <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex h-14 items-center bg-gradient-to-b from-background via-background/70 to-transparent px-4 pb-3">
+                <div className="pointer-events-auto min-w-0 max-w-[min(28rem,calc(100%-11rem))]">
+                  {mapTitle}
+                </div>
+              </header>
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2 p-3 [&_>_*]:pointer-events-auto">
+                <PwaControls
+                  editing={isEditing(mode)}
+                  onDiscardDraft={cancelEdit}
+                />
+              </div>
+              <div className="pointer-events-none absolute end-3 top-3 z-20 [&_>_*]:pointer-events-auto">
+                <ToolsPanel
+                  map={openMap}
+                  mode={mode}
+                  catalog={catalog}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  onCreateRoot={createRoot}
+                  onMoveUp={moveUp}
+                  onMoveDown={moveDown}
+                  onMoveUnder={moveUnder}
+                  onSwapWithParent={swapWithParent}
+                  onDetach={detach}
+                  onDelete={deleteNode}
+                  onSetWidth={setWidth}
+                  onResetWidth={resetWidth}
+                  onSetColorSlot={setColorSlot}
+                  onUpdatePalette={(slot, hex) => {
+                    void updatePalette(slot, hex);
+                  }}
+                  onUndo={undo}
+                  onRedo={redo}
+                />
+              </div>
             </div>
           </>
         ) : (

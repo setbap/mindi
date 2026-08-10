@@ -254,8 +254,8 @@ function MapCanvasFlow({
         onCentered?: () => void;
       },
     ) => {
-      const duration =
-        options?.duration ?? (prefersReducedMotion ? 0 : 200);
+      // Instant by default — a 200ms pan felt sluggish for Tab/Enter/arrow chaining.
+      const duration = options?.duration ?? 0;
       // Prefer setCenter over fitView: fitView ignores Nodes until RF has
       // measured them, which leaves the initial viewport stuck at origin.
       const tryReveal = (attemptsLeft: number) => {
@@ -295,7 +295,7 @@ function MapCanvasFlow({
       };
       tryReveal(120);
     },
-    [getNode, getZoom, prefersReducedMotion, setCenter, storeApi],
+    [getNode, getZoom, setCenter, storeApi],
   );
 
   useImperativeHandle(
@@ -398,7 +398,7 @@ function MapCanvasFlow({
   }, [map.nodes]);
 
   // Same path as Node browser `onReveal`: when focus moves (arrows, create,
-  // browser, canvas click), center that Node after paint.
+  // browser, canvas click), center that Node immediately.
   useEffect(() => {
     const previous = prevFocusedIdRef.current;
     prevFocusedIdRef.current = focusedId;
@@ -408,10 +408,7 @@ function MapCanvasFlow({
     if (!viewportInitialized || paneWidth < 40 || paneHeight < 40) {
       return;
     }
-    const raf = window.requestAnimationFrame(() => {
-      revealNode(focusedId);
-    });
-    return () => window.cancelAnimationFrame(raf);
+    revealNode(focusedId);
   }, [
     focusedId,
     revealNode,

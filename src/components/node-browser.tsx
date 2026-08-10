@@ -8,11 +8,12 @@ import {
   type ReactNode,
 } from "react";
 
+import { focusedIdOf, type InteractionMode } from "@/domain/interaction";
 import {
-  focusedIdOf,
-  type InteractionMode,
-} from "@/domain/interaction";
-import { searchNodes } from "@/domain/node-browser";
+  browserTreeGuides,
+  searchNodes,
+  type BrowserTreeGuides,
+} from "@/domain/node-browser";
 import type { MapRecord } from "@/domain/types";
 import { useI18n } from "@/i18n/i18n-context";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,40 @@ function highlightLabel(label: string, query: string): ReactNode {
   );
 }
 
+function TreeGuideRail({
+  depth,
+  guides,
+}: {
+  depth: number;
+  guides: BrowserTreeGuides;
+}) {
+  if (depth === 0) {
+    return null;
+  }
+
+  return (
+    <span className="browser-tree-guides" aria-hidden="true">
+      {guides.continues.map((continues, index) => (
+        <span
+          key={`stem-${index}`}
+          className={cn(
+            "browser-tree-guide",
+            continues && "browser-tree-guide-continue",
+          )}
+        />
+      ))}
+      <span
+        className={cn(
+          "browser-tree-guide",
+          guides.isLast
+            ? "browser-tree-guide-end"
+            : "browser-tree-guide-branch",
+        )}
+      />
+    </span>
+  );
+}
+
 export function NodeBrowser({
   map,
   mode,
@@ -65,6 +100,10 @@ export function NodeBrowser({
     result.kind === "results"
       ? result.matches.map((m) => m.id)
       : result.visibleIds;
+  const guidesById = useMemo(
+    () => browserTreeGuides(result.nodes),
+    [result.nodes],
+  );
 
   useEffect(() => {
     const index = navIds.indexOf(focusedId);
@@ -121,7 +160,7 @@ export function NodeBrowser({
 
   return (
     <aside
-      className="app-dock flex h-full min-h-0 w-full flex-col gap-2 p-3 md:rounded-none md:border-0"
+      className="border-border bg-card flex h-full min-h-0 w-full flex-col gap-2 rounded-lg border p-3 shadow-sm"
       data-testid="map-node-browser"
       aria-labelledby={labelId}
     >
@@ -148,14 +187,14 @@ export function NodeBrowser({
         ref={listRef}
         role="tree"
         aria-label={t("mapNodes")}
-        className="min-h-0 flex-1 overflow-auto"
+        className="browser-tree min-h-0 flex-1 overflow-auto"
       >
         {result.kind === "empty" ? (
           <p className="text-muted-foreground p-2 text-sm" role="status">
             {t("noMatchingNodes")}
           </p>
         ) : (
-          <ul role="group" className="flex flex-col gap-0.5">
+          <ul role="group" className="flex flex-col gap-0.5 py-0.5">
             {result.nodes.map((node) => {
               const isFocused = node.id === focusedId;
               const isActive = navIds[activeIndex] === node.id;
@@ -163,23 +202,30 @@ export function NodeBrowser({
                 map.nodes[node.id]?.markdown.trim().length === 0
                   ? t("emptyNode")
                   : node.label;
+              const guides = guidesById.get(node.id) ?? {
+                continues: [],
+                isLast: true,
+              };
               return (
                 <li key={node.id} role="none">
                   <button
                     type="button"
                     role="treeitem"
                     aria-selected={isFocused}
+                    aria-level={node.depth + 1}
                     data-browser-node={node.id}
                     data-testid={`browser-node-${node.id}`}
                     className={cn(
-                      "hover:bg-accent w-full rounded-md px-2 py-1 text-start text-sm",
-                      isFocused && "ring-ring bg-accent/60 ring-1",
+                      "hover:bg-accent flex w-full items-stretch rounded-md py-1 pe-2 text-start text-sm",
+                      isFocused && "ring-ring bg-accent/60 ring-1 ring-inset",
                       isActive && !isFocused && "bg-muted/60",
                     )}
-                    style={{ paddingInlineStart: `${0.5 + node.depth * 0.75}rem` }}
                     onClick={() => selectNode(node.id)}
                   >
-                    {highlightLabel(displayLabel, query)}
+                    <TreeGuideRail depth={node.depth} guides={guides} />
+                    <span className="min-w-0 flex-1 truncate ps-1.5">
+                      {highlightLabel(displayLabel, query)}
+                    </span>
                   </button>
                 </li>
               );

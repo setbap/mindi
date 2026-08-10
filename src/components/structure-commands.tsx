@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -66,12 +66,12 @@ function RailButton({
       variant={destructive ? "destructive" : "secondary"}
       size="sm"
       disabled={disabled}
-      title={title}
+      title={title ?? label}
+      aria-label={label}
       onClick={onClick}
-      className="h-8 w-full justify-start gap-2 px-2 font-normal"
+      className="size-auto aspect-square w-full p-0"
     >
       {icon}
-      <span className="truncate">{label}</span>
     </Button>
   );
 }
@@ -112,7 +112,7 @@ export function StructureCommands({
     return domainNodeLabel(markdown);
   }
 
-  function requestDelete() {
+  const requestDelete = useCallback(() => {
     if (!deleteEnabled) {
       return;
     }
@@ -121,7 +121,36 @@ export function StructureCommands({
       return;
     }
     onDelete();
-  }
+  }, [deleteEnabled, descendants, onDelete]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Delete" && event.key !== "Backspace") {
+        return;
+      }
+      if (deleteOpen || moveUnderOpen) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      if (target.closest("textarea, input, select, [contenteditable='true']")) {
+        return;
+      }
+      if (target.closest('[role="dialog"], [data-radix-portal]')) {
+        return;
+      }
+      if (!deleteEnabled) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      requestDelete();
+    }
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [deleteEnabled, deleteOpen, moveUnderOpen, requestDelete]);
 
   function confirmDelete() {
     setDeleteOpen(false);
@@ -182,7 +211,7 @@ export function StructureCommands({
   if (rail) {
     return (
       <div
-        className="flex flex-col gap-1"
+        className="grid grid-cols-4 gap-1"
         data-testid="structure-commands"
         aria-label={t("structureCommands")}
       >
@@ -227,11 +256,16 @@ export function StructureCommands({
           icon={<Trash2 />}
           destructive
           disabled={!deleteEnabled}
-          title={finalNodeBlocked ? t("finalNodeCannotDelete") : undefined}
+          title={
+            finalNodeBlocked ? t("finalNodeCannotDelete") : t("delete")
+          }
           onClick={requestDelete}
         />
         {finalNodeBlocked ? (
-          <p className="text-muted-foreground px-1 text-xs leading-snug" role="status">
+          <p
+            className="text-muted-foreground basis-full px-0.5 text-xs leading-snug"
+            role="status"
+          >
             {t("finalNodeCannotDelete")}
           </p>
         ) : null}

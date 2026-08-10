@@ -7,6 +7,53 @@ export interface BrowserNode {
   label: string;
 }
 
+/** Per-row tree-guide painting hints for the Node browser. */
+export interface BrowserTreeGuides {
+  /** At each ancestor depth, draw a continuing vertical stem when true. */
+  continues: boolean[];
+  /** Whether this row is the last visible sibling under its parent. */
+  isLast: boolean;
+}
+
+/**
+ * Compute file-tree guide segments for a visible (already ordered) Node list.
+ * Ancestor columns draw a stem when that ancestor still has a later sibling
+ * in `nodes`; the leaf connector is an elbow when this Node is last.
+ */
+export function browserTreeGuides(
+  nodes: BrowserNode[],
+): Map<string, BrowserTreeGuides> {
+  const childrenByParent = new Map<string, string[]>();
+  for (const node of nodes) {
+    const parentKey = node.ancestorIds[node.ancestorIds.length - 1] ?? "";
+    const siblings = childrenByParent.get(parentKey);
+    if (siblings) {
+      siblings.push(node.id);
+    } else {
+      childrenByParent.set(parentKey, [node.id]);
+    }
+  }
+
+  const isLastSibling = new Map<string, boolean>();
+  for (const siblings of childrenByParent.values()) {
+    siblings.forEach((id, index) => {
+      isLastSibling.set(id, index === siblings.length - 1);
+    });
+  }
+
+  const guides = new Map<string, BrowserTreeGuides>();
+  for (const node of nodes) {
+    const continues = node.ancestorIds.map(
+      (ancestorId) => !(isLastSibling.get(ancestorId) ?? true),
+    );
+    guides.set(node.id, {
+      continues,
+      isLast: isLastSibling.get(node.id) ?? true,
+    });
+  }
+  return guides;
+}
+
 export type SearchRank = "prefix" | "substring";
 
 export interface SearchMatch extends BrowserNode {
