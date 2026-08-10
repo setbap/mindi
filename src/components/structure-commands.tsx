@@ -1,4 +1,13 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CornerDownRight,
+  GitBranchPlus,
+  Replace,
+  Trash2,
+  Unlink,
+} from "lucide-react";
 
 import { ResponsiveOverlay } from "@/components/responsive-overlay";
 import { Button } from "@/components/ui/button";
@@ -19,10 +28,14 @@ import {
 } from "@/domain/structure";
 import type { MapRecord } from "@/domain/types";
 import { useI18n } from "@/i18n/i18n-context";
+import { cn } from "@/lib/utils";
+
+export type CommandLayout = "toolbar" | "rail";
 
 interface StructureCommandsProps {
   map: MapRecord;
   mode: InteractionMode;
+  layout?: CommandLayout;
   onCreateRoot: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -32,9 +45,41 @@ interface StructureCommandsProps {
   onDelete: () => void;
 }
 
+function RailButton({
+  label,
+  icon,
+  disabled,
+  destructive,
+  title,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  disabled?: boolean;
+  destructive?: boolean;
+  title?: string;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant={destructive ? "destructive" : "secondary"}
+      size="sm"
+      disabled={disabled}
+      title={title}
+      onClick={onClick}
+      className="h-8 w-full justify-start gap-2 px-2 font-normal"
+    >
+      {icon}
+      <span className="truncate">{label}</span>
+    </Button>
+  );
+}
+
 export function StructureCommands({
   map,
   mode,
+  layout = "toolbar",
   onCreateRoot,
   onMoveUp,
   onMoveDown,
@@ -46,6 +91,7 @@ export function StructureCommands({
   const { t } = useI18n();
   const [moveUnderOpen, setMoveUnderOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const rail = layout === "rail";
 
   const editing = isEditing(mode);
   const focusedId = focusedIdOf(mode);
@@ -82,9 +128,121 @@ export function StructureCommands({
     onDelete();
   }
 
+  const overlays = (
+    <>
+      <ResponsiveOverlay
+        open={moveUnderOpen}
+        onOpenChange={setMoveUnderOpen}
+        title={t("moveUnderTitle")}
+        description={t("moveUnder")}
+        contentTestId="move-under-picker"
+      >
+        <ul className="flex flex-col gap-2" aria-label={t("moveUnderTargets")}>
+          {targets.map((targetId) => (
+            <li key={targetId}>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full justify-start"
+                onClick={() => {
+                  onMoveUnder(targetId);
+                  setMoveUnderOpen(false);
+                }}
+              >
+                {labelFor(targetId)}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </ResponsiveOverlay>
+
+      <ResponsiveOverlay
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirmBody", { count: descendants })}
+        contentTestId="delete-confirm"
+      >
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setDeleteOpen(false)}
+          >
+            {t("cancel")}
+          </Button>
+          <Button type="button" variant="destructive" onClick={confirmDelete}>
+            {t("delete")}
+          </Button>
+        </div>
+      </ResponsiveOverlay>
+    </>
+  );
+
+  if (rail) {
+    return (
+      <div
+        className="flex flex-col gap-1"
+        data-testid="structure-commands"
+        aria-label={t("structureCommands")}
+      >
+        <RailButton
+          label={t("createRoot")}
+          icon={<GitBranchPlus />}
+          disabled={editing}
+          onClick={onCreateRoot}
+        />
+        <RailButton
+          label={t("moveUp")}
+          icon={<ArrowUp />}
+          disabled={!moveUpEnabled}
+          onClick={onMoveUp}
+        />
+        <RailButton
+          label={t("moveDown")}
+          icon={<ArrowDown />}
+          disabled={!moveDownEnabled}
+          onClick={onMoveDown}
+        />
+        <RailButton
+          label={t("moveUnder")}
+          icon={<CornerDownRight />}
+          disabled={targets.length === 0}
+          onClick={() => setMoveUnderOpen(true)}
+        />
+        <RailButton
+          label={t("swapWithParent")}
+          icon={<Replace />}
+          disabled={!swapEnabled}
+          onClick={onSwapWithParent}
+        />
+        <RailButton
+          label={t("detach")}
+          icon={<Unlink />}
+          disabled={!detachEnabled}
+          onClick={onDetach}
+        />
+        <RailButton
+          label={t("delete")}
+          icon={<Trash2 />}
+          destructive
+          disabled={!deleteEnabled}
+          title={finalNodeBlocked ? t("finalNodeCannotDelete") : undefined}
+          onClick={requestDelete}
+        />
+        {finalNodeBlocked ? (
+          <p className="text-muted-foreground px-1 text-xs leading-snug" role="status">
+            {t("finalNodeCannotDelete")}
+          </p>
+        ) : null}
+        {overlays}
+      </div>
+    );
+  }
+
   return (
     <div
-      className="flex flex-wrap items-center gap-2"
+      className={cn("flex flex-wrap items-center gap-2")}
       data-testid="structure-commands"
       aria-label={t("structureCommands")}
     >
@@ -157,53 +315,7 @@ export function StructureCommands({
           {t("finalNodeCannotDelete")}
         </p>
       ) : null}
-
-      <ResponsiveOverlay
-        open={moveUnderOpen}
-        onOpenChange={setMoveUnderOpen}
-        title={t("moveUnderTitle")}
-        description={t("moveUnder")}
-        contentTestId="move-under-picker"
-      >
-        <ul className="flex flex-col gap-2" aria-label={t("moveUnderTargets")}>
-          {targets.map((targetId) => (
-            <li key={targetId}>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full justify-start"
-                onClick={() => {
-                  onMoveUnder(targetId);
-                  setMoveUnderOpen(false);
-                }}
-              >
-                {labelFor(targetId)}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </ResponsiveOverlay>
-
-      <ResponsiveOverlay
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("deleteConfirmTitle")}
-        description={t("deleteConfirmBody", { count: descendants })}
-        contentTestId="delete-confirm"
-      >
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setDeleteOpen(false)}
-          >
-            {t("cancel")}
-          </Button>
-          <Button type="button" variant="destructive" onClick={confirmDelete}>
-            {t("delete")}
-          </Button>
-        </div>
-      </ResponsiveOverlay>
+      {overlays}
     </div>
   );
 }

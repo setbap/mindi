@@ -6,6 +6,7 @@ import { NodeBrowser } from "@/components/node-browser";
 import { StructureCommands } from "@/components/structure-commands";
 import { StructureLiveRegion } from "@/components/structure-live-region";
 import { StyleCommands } from "@/components/style-commands";
+import { ToolsPanel } from "@/components/tools-panel";
 import { Button } from "@/components/ui/button";
 import { focusedIdOf, isEditing } from "@/domain/interaction";
 import type { Language } from "@/domain/types";
@@ -133,7 +134,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
       ?.focus();
   }
 
-  const commands = (
+  const mobileCommands = (
     <>
       <StructureCommands
         map={openMap}
@@ -164,6 +165,30 @@ function ReadyApp({ app }: { app: ReadyController }) {
     </>
   );
 
+  const canvas = (
+    <div className="app-canvas-stage h-full min-h-0 min-w-0 w-full" dir="ltr">
+      <MapCanvas
+        ref={canvasRef}
+        map={openMap}
+        mode={mode}
+        palette={catalog.palette}
+        onFocus={focusNode}
+        onStartEditing={startEditing}
+        onDraftChange={setDraft}
+        onCommit={commitEdit}
+        onCancel={cancelEdit}
+        onCreateSibling={createSibling}
+        onCreateChild={createChild}
+        onTypeCharacter={typeCharacter}
+        onArrow={arrow}
+        onMoveUp={moveUp}
+        onMoveDown={moveDown}
+        onCommitWidth={(nodeId, width) => setWidth(width, nodeId)}
+        onEscapeExit={exitCanvasToBrowser}
+      />
+    </div>
+  );
+
   return (
     <main
       ref={shellRef}
@@ -172,83 +197,128 @@ function ReadyApp({ app }: { app: ReadyController }) {
       dir={dir}
       lang={lang}
     >
-      <div className="app-workspace mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 p-3 md:gap-4 md:p-6">
+      <div className="app-workspace flex min-h-0 w-full flex-1 flex-col md:flex-row">
         <StructureLiveRegion map={openMap} mode={mode} />
-        <header className="flex shrink-0 items-center justify-between gap-4">
-          <div>
-            <p className="text-muted-foreground text-sm">{t("brand")}</p>
-            <h1 className="text-2xl font-semibold">{openMap.name}</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm">
-              <span className="sr-only">{t("language")}</span>
-              <select
-                aria-label={t("language")}
-                className="border-input bg-background rounded-md border px-2 py-1.5"
-                value={language}
-                onChange={(event) => {
-                  void setLanguage(event.target.value as Language);
-                }}
-                data-testid="language-select"
-              >
-                <option value="en">{t("languageEnglish")}</option>
-                <option value="fa">{t("languagePersian")}</option>
-              </select>
-            </label>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => exitCanvasToBrowser()}
-            >
-              {t("nodeBrowser")}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setManagerOpen(true)}
-            >
-              {t("maps")}
-            </Button>
-          </div>
-        </header>
-
-        <PwaControls editing={isEditing(mode)} onDiscardDraft={cancelEdit} />
 
         {isDesktop ? (
-          <div className="flex shrink-0 flex-col gap-2">{commands}</div>
-        ) : null}
+          <>
+            <div
+              className="flex h-full shrink-0 flex-col"
+              style={{ width: "var(--dock-width)" }}
+            >
+              <NodeBrowser
+                map={openMap}
+                mode={mode}
+                onFocus={focusNode}
+                onReveal={revealOnCanvas}
+              />
+            </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 md:flex-row md:gap-4">
-          <div className="h-44 shrink-0 md:h-full md:w-72">
-            <NodeBrowser
-              map={openMap}
-              mode={mode}
-              onFocus={focusNode}
-              onReveal={revealOnCanvas}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <header className="border-border flex h-11 shrink-0 items-center gap-3 border-b px-4">
+                <div className="min-w-0">
+                  <p className="text-muted-foreground text-xs leading-none">
+                    {t("brand")}
+                  </p>
+                  <h1 className="truncate text-sm font-semibold leading-tight">
+                    {openMap.name}
+                  </h1>
+                </div>
+              </header>
+              <div className="relative min-h-0 min-w-0 flex-1">
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2 p-3 [&_>_*]:pointer-events-auto">
+                  <PwaControls
+                    editing={isEditing(mode)}
+                    onDiscardDraft={cancelEdit}
+                  />
+                </div>
+                <div className="absolute inset-0 min-h-0 min-w-0">{canvas}</div>
+              </div>
+            </div>
+
+            <div
+              className="flex h-full shrink-0 flex-col"
+              style={{ width: "var(--inspector-width)" }}
+            >
+              <ToolsPanel
+                map={openMap}
+                mode={mode}
+                catalog={catalog}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onOpenMaps={() => setManagerOpen(true)}
+                onSetLanguage={(next) => {
+                  void setLanguage(next);
+                }}
+                onCreateRoot={createRoot}
+                onMoveUp={moveUp}
+                onMoveDown={moveDown}
+                onMoveUnder={moveUnder}
+                onSwapWithParent={swapWithParent}
+                onDetach={detach}
+                onDelete={deleteNode}
+                onSetWidth={setWidth}
+                onResetWidth={resetWidth}
+                onSetColorSlot={setColorSlot}
+                onUpdatePalette={(slot, hex) => {
+                  void updatePalette(slot, hex);
+                }}
+                onUndo={undo}
+                onRedo={redo}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <header className="flex shrink-0 items-center justify-between gap-4 p-3">
+              <div>
+                <p className="text-muted-foreground text-sm">{t("brand")}</p>
+                <h1 className="text-2xl font-semibold">{openMap.name}</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <span className="sr-only">{t("language")}</span>
+                  <select
+                    aria-label={t("language")}
+                    className="border-input bg-background rounded-md border px-2 py-1.5"
+                    value={language}
+                    onChange={(event) => {
+                      void setLanguage(event.target.value as Language);
+                    }}
+                    data-testid="language-select"
+                  >
+                    <option value="en">{t("languageEnglish")}</option>
+                    <option value="fa">{t("languagePersian")}</option>
+                  </select>
+                </label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setManagerOpen(true)}
+                >
+                  {t("maps")}
+                </Button>
+              </div>
+            </header>
+
+            <PwaControls
+              editing={isEditing(mode)}
+              onDiscardDraft={cancelEdit}
             />
-          </div>
-          <div className="min-h-0 min-w-0 flex-1" dir="ltr">
-            <MapCanvas
-              ref={canvasRef}
-              map={openMap}
-              mode={mode}
-              palette={catalog.palette}
-              onFocus={focusNode}
-              onStartEditing={startEditing}
-              onDraftChange={setDraft}
-              onCommit={commitEdit}
-              onCancel={cancelEdit}
-              onCreateSibling={createSibling}
-              onCreateChild={createChild}
-              onTypeCharacter={typeCharacter}
-              onArrow={arrow}
-              onMoveUp={moveUp}
-              onMoveDown={moveDown}
-              onCommitWidth={(nodeId, width) => setWidth(width, nodeId)}
-              onEscapeExit={exitCanvasToBrowser}
-            />
-          </div>
-        </div>
+
+            <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+              <div className="h-44 shrink-0">
+                <NodeBrowser
+                  map={openMap}
+                  mode={mode}
+                  onFocus={focusNode}
+                  onReveal={revealOnCanvas}
+                />
+              </div>
+              <div className="min-h-0 min-w-0 flex-1">{canvas}</div>
+            </div>
+          </>
+        )}
 
         <MapManager
           open={managerOpen}
@@ -271,7 +341,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
       >
         {!isDesktop ? (
           <div className="flex max-h-36 flex-col gap-2 overflow-y-auto">
-            {commands}
+            {mobileCommands}
           </div>
         ) : null}
       </footer>

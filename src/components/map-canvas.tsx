@@ -12,6 +12,8 @@ import {
   type Ref,
 } from "react";
 import {
+  Background,
+  BackgroundVariant,
   Handle,
   Position,
   ReactFlow,
@@ -447,7 +449,7 @@ function MapCanvasFlow({
         aria-label={t("mapCanvas")}
         aria-activedescendant={`canvas-active-${focusedId}`}
         className={cn(
-          "bg-background focus-visible:ring-ring relative h-full min-h-0 w-full overflow-hidden rounded-lg border focus-visible:ring-2 focus-visible:outline-none",
+          "map-canvas-host bg-background focus-visible:ring-ring relative h-full min-h-0 w-full overflow-hidden focus-visible:ring-2 focus-visible:outline-none",
         )}
         onKeyDown={onKeyDown}
         data-testid="map-canvas"
@@ -486,7 +488,16 @@ function MapCanvasFlow({
             !scalePolicy.animate &&
               "[&_.react-flow__node]:!transition-none [&_.react-flow__viewport]:!transition-none",
           )}
-        />
+        >
+          <Background
+            id="map-grid"
+            variant={BackgroundVariant.Lines}
+            gap={24}
+            size={1}
+            lineWidth={1}
+            color="var(--canvas-grid-color)"
+          />
+        </ReactFlow>
       </div>
     </CanvasNodeContext.Provider>
   );

@@ -121,16 +121,16 @@ export function NodeBrowser({
 
   return (
     <aside
-      className="bg-card/40 flex h-full min-h-0 w-full flex-col gap-2 rounded-lg border p-3"
+      className="app-dock flex h-full min-h-0 w-full flex-col gap-2 p-3 md:rounded-none md:border-0"
       data-testid="map-node-browser"
       aria-labelledby={labelId}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex shrink-0 items-center justify-between gap-2">
         <h2 id={labelId} className="text-sm font-semibold">
           {t("nodeBrowserHeading")}
         </h2>
       </div>
-      <label className="flex flex-col gap-1">
+      <label className="flex shrink-0 flex-col gap-1">
         <span className="sr-only">{t("searchNodes")}</span>
         <input
           ref={searchRef}
@@ -172,7 +172,7 @@ export function NodeBrowser({
                     data-browser-node={node.id}
                     data-testid={`browser-node-${node.id}`}
                     className={cn(
-                      "hover:bg-accent w-full rounded-md px-2 py-1.5 text-start text-sm",
+                      "hover:bg-accent w-full rounded-md px-2 py-1 text-start text-sm",
                       isFocused && "ring-ring bg-accent/60 ring-1",
                       isActive && !isFocused && "bg-muted/60",
                     )}

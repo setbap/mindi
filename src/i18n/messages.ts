@@ -49,6 +49,10 @@ export type MessageKey =
   | "languagePersian"
   | "structureCommands"
   | "styleCommands"
+  | "toolsSectionMap"
+  | "toolsSectionStructure"
+  | "toolsSectionStyle"
+  | "toolsSectionApp"
   | "emptyNode"
   | "mapNowHasNodes"
   | "deletedMapNowHasNodes"
@@ -134,6 +138,10 @@ const en: Messages = {
   languagePersian: "Persian",
   structureCommands: "Structure commands",
   styleCommands: "Style commands",
+  toolsSectionMap: "Map",
+  toolsSectionStructure: "Structure",
+  toolsSectionStyle: "Style",
+  toolsSectionApp: "App",
   emptyNode: "Empty Node",
   mapNowHasNodes: "Map now has {count} nodes.",
   deletedMapNowHasNodes: "Deleted. Map now has {count} nodes.",
@@ -218,6 +226,10 @@ const fa: Messages = {
   languagePersian: "فارسی",
   structureCommands: "فرمان‌های ساختار",
   styleCommands: "فرمان‌های ظاهر",
+  toolsSectionMap: "نقشه",
+  toolsSectionStructure: "ساختار",
+  toolsSectionStyle: "ظاهر",
+  toolsSectionApp: "برنامه",
   emptyNode: "گره خالی",
   mapNowHasNodes: "نقشه اکنون {count} گره دارد.",
   deletedMapNowHasNodes: "حذف شد. نقشه اکنون {count} گره دارد.",

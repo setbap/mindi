@@ -29,6 +29,10 @@
   --visible-viewport-offset-top: 0px;
   --bottom-safe: env(safe-area-inset-bottom, 0px);
   --bar-gap: 0.5rem;
+
+  --dock-width: 16.5rem;
+  --inspector-width: 14.5rem;
+  --canvas-grid-color: rgb(168 153 132 / 0.12);
 }
 
 @theme inline {
@@ -77,6 +81,32 @@
   .app-workspace {
     min-block-size: 0;
     min-inline-size: 0;
+  }
+
+  .app-dock {
+    background: var(--card);
+    border-inline-end: 1px solid var(--border);
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+
+  .app-inspector {
+    background: var(--card);
+    border-inline-start: 1px solid var(--border);
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+
+  .app-canvas-stage {
+    position: relative;
+    min-block-size: 0;
+    min-inline-size: 0;
+    background: var(--background);
+  }
+
+  .map-canvas-host .react-flow__background pattern circle,
+  .map-canvas-host .react-flow__background pattern line {
+    stroke: var(--canvas-grid-color);
   }
 
   .bottom-actions {

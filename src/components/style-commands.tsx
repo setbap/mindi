@@ -1,4 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  Maximize2,
+  Palette,
+  Redo2,
+  RotateCcw,
+  Undo2,
+} from "lucide-react";
 
 import { ResponsiveOverlay } from "@/components/responsive-overlay";
 import { Button } from "@/components/ui/button";
@@ -16,6 +23,9 @@ import {
 import type { CatalogRecord, ColorSlot, MapRecord } from "@/domain/types";
 import { DEFAULT_NODE_WIDTH } from "@/domain/types";
 import { useI18n } from "@/i18n/i18n-context";
+import { cn } from "@/lib/utils";
+
+import type { CommandLayout } from "./structure-commands";
 
 interface StyleCommandsProps {
   map: MapRecord;
@@ -23,6 +33,7 @@ interface StyleCommandsProps {
   catalog: CatalogRecord;
   canUndo: boolean;
   canRedo: boolean;
+  layout?: CommandLayout;
   onSetWidth: (width: number) => void;
   onResetWidth: () => void;
   onSetColorSlot: (slot: ColorSlot) => void;
@@ -33,12 +44,39 @@ interface StyleCommandsProps {
 
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const satisfies readonly ColorSlot[];
 
+function RailButton({
+  label,
+  icon,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      disabled={disabled}
+      onClick={onClick}
+      className="h-8 w-full justify-start gap-2 px-2 font-normal"
+    >
+      {icon}
+      <span className="truncate">{label}</span>
+    </Button>
+  );
+}
+
 export function StyleCommands({
   map,
   mode,
   catalog,
   canUndo,
   canRedo,
+  layout = "toolbar",
   onSetWidth,
   onResetWidth,
   onSetColorSlot,
@@ -50,6 +88,7 @@ export function StyleCommands({
   const [resizeOpen, setResizeOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [draftWidth, setDraftWidth] = useState(String(DEFAULT_NODE_WIDTH));
+  const rail = layout === "rail";
 
   const editing = isEditing(mode);
   const focusedId = focusedIdOf(mode);
@@ -90,75 +129,35 @@ export function StyleCommands({
     setResizeOpen(false);
   }
 
-  return (
+  const colorSlots = (
     <div
-      className="flex flex-wrap items-center gap-2"
-      data-testid="style-commands"
-      aria-label={t("styleCommands")}
+      className={cn(
+        "flex flex-wrap items-center gap-1",
+        rail && "px-1 py-1",
+      )}
+      role="group"
+      aria-label={t("colorSlot")}
     >
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={editing || !focused}
-        onClick={() => setResizeOpen(true)}
-      >
-        {t("resize")}
-      </Button>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={editing || !focused}
-        onClick={onResetWidth}
-      >
-        {t("resetWidth")}
-      </Button>
-      <div
-        className="flex items-center gap-1"
-        role="group"
-        aria-label={t("colorSlot")}
-      >
-        {SLOTS.map((slot) => (
-          <button
-            key={slot}
-            type="button"
-            aria-label={t("colorSlotN", { n: slot })}
-            aria-pressed={focused?.colorSlot === slot}
-            disabled={editing || !focused}
-            className="size-6 rounded-sm border border-black/20 disabled:opacity-40"
-            style={{ backgroundColor: paletteColor(catalog.palette, slot) }}
-            onClick={() => onSetColorSlot(slot)}
-          />
-        ))}
-      </div>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={() => setPaletteOpen(true)}
-      >
-        {t("palette")}
-      </Button>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={!canUndo}
-        onClick={onUndo}
-      >
-        {t("undo")}
-      </Button>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={!canRedo}
-        onClick={onRedo}
-      >
-        {t("redo")}
-      </Button>
+      {SLOTS.map((slot) => (
+        <button
+          key={slot}
+          type="button"
+          aria-label={t("colorSlotN", { n: slot })}
+          aria-pressed={focused?.colorSlot === slot}
+          disabled={editing || !focused}
+          className={cn(
+            "size-6 rounded-sm border border-black/20 disabled:opacity-40",
+            focused?.colorSlot === slot && "ring-ring ring-2",
+          )}
+          style={{ backgroundColor: paletteColor(catalog.palette, slot) }}
+          onClick={() => onSetColorSlot(slot)}
+        />
+      ))}
+    </div>
+  );
 
+  const overlays = (
+    <>
       <ResponsiveOverlay
         open={resizeOpen}
         onOpenChange={setResizeOpen}
@@ -217,6 +216,103 @@ export function StyleCommands({
           ))}
         </ul>
       </ResponsiveOverlay>
+    </>
+  );
+
+  if (rail) {
+    return (
+      <div
+        className="flex flex-col gap-1"
+        data-testid="style-commands"
+        aria-label={t("styleCommands")}
+      >
+        <RailButton
+          label={t("resize")}
+          icon={<Maximize2 />}
+          disabled={editing || !focused}
+          onClick={() => setResizeOpen(true)}
+        />
+        <RailButton
+          label={t("resetWidth")}
+          icon={<RotateCcw />}
+          disabled={editing || !focused}
+          onClick={onResetWidth}
+        />
+        {colorSlots}
+        <RailButton
+          label={t("palette")}
+          icon={<Palette />}
+          onClick={() => setPaletteOpen(true)}
+        />
+        <RailButton
+          label={t("undo")}
+          icon={<Undo2 />}
+          disabled={!canUndo}
+          onClick={onUndo}
+        />
+        <RailButton
+          label={t("redo")}
+          icon={<Redo2 />}
+          disabled={!canRedo}
+          onClick={onRedo}
+        />
+        {overlays}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2"
+      data-testid="style-commands"
+      aria-label={t("styleCommands")}
+    >
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={editing || !focused}
+        onClick={() => setResizeOpen(true)}
+      >
+        {t("resize")}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={editing || !focused}
+        onClick={onResetWidth}
+      >
+        {t("resetWidth")}
+      </Button>
+      {colorSlots}
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => setPaletteOpen(true)}
+      >
+        {t("palette")}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={!canUndo}
+        onClick={onUndo}
+      >
+        {t("undo")}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={!canRedo}
+        onClick={onRedo}
+      >
+        {t("redo")}
+      </Button>
+      {overlays}
     </div>
   );
 }
