@@ -10,7 +10,7 @@ test("Map manager create rename switch and delete persist", async ({
     page.getByRole("heading", { name: "Untitled Map" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   await expect(page.getByTestId("map-manager-dialog")).toBeVisible();
   await page.getByRole("button", { name: "Create Map" }).click();
 
@@ -29,7 +29,7 @@ test("Map manager create rename switch and delete persist", async ({
 
   await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   await catalog
     .getByRole("listitem")
     .first()
@@ -39,7 +39,7 @@ test("Map manager create rename switch and delete persist", async ({
     page.getByRole("heading", { name: "Untitled Map" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   await catalog
     .getByRole("listitem")
     .nth(1)
@@ -52,15 +52,16 @@ test("Map manager create rename switch and delete persist", async ({
   await expect(
     page.getByRole("heading", { name: "Untitled Map" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   await expect(
     page.getByRole("list", { name: "Map catalog" }).getByRole("listitem"),
   ).toHaveCount(1);
 });
 
-test("Map manager uses a Sheet on mobile widths", async ({ page }) => {
+test("Map manager uses a Drawer on mobile widths", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByTestId("mobile-open-structure").click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   await expect(page.getByTestId("map-manager-sheet")).toBeVisible();
 });

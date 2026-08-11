@@ -58,7 +58,7 @@ test("installed shell launches deep-linked offline and keeps Map CRUD local", as
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Detach" }).click();
 
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   await page.getByRole("button", { name: "Create Map" }).click();
   const catalog = page.getByRole("list", { name: "Map catalog" });
   await catalog
@@ -77,7 +77,7 @@ test("installed shell launches deep-linked offline and keeps Map CRUD local", as
   await page.keyboard.type("Transfer note");
   await page.keyboard.press("Enter");
 
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export Map" }).click();
   const exported = await download;

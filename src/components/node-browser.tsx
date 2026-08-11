@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { Circle, Search } from "lucide-react";
 
 import { focusedIdOf, type InteractionMode } from "@/domain/interaction";
 import {
@@ -23,6 +24,8 @@ interface NodeBrowserProps {
   mode: InteractionMode;
   onFocus: (nodeId: string) => void;
   onReveal: (nodeId: string) => void;
+  /** `panel` = dock card; `sheet` = flush list for mobile Vaul drawers. */
+  variant?: "panel" | "sheet";
 }
 
 function highlightLabel(label: string, query: string): ReactNode {
@@ -86,6 +89,7 @@ export function NodeBrowser({
   mode,
   onFocus,
   onReveal,
+  variant = "panel",
 }: NodeBrowserProps) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
@@ -94,6 +98,7 @@ export function NodeBrowser({
   const listRef = useRef<HTMLDivElement>(null);
   const labelId = useId();
   const focusedId = focusedIdOf(mode);
+  const sheet = variant === "sheet";
 
   const result = useMemo(() => searchNodes(map, query), [map, query]);
   const navIds =
@@ -160,24 +165,48 @@ export function NodeBrowser({
 
   return (
     <aside
-      className="border-border bg-card flex h-full min-h-0 w-full flex-col gap-2 rounded-lg border p-3 shadow-sm"
+      className={cn(
+        "flex h-full min-h-0 w-full flex-col",
+        sheet
+          ? "gap-3 bg-transparent"
+          : "border-border bg-card gap-2 rounded-lg border p-3 shadow-sm",
+      )}
       data-testid="map-node-browser"
+      data-variant={variant}
       aria-labelledby={labelId}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2">
-        <h2 id={labelId} className="text-sm font-semibold">
-          {t("nodeBrowserHeading")}
-        </h2>
-      </div>
-      <label className="flex shrink-0 flex-col gap-1">
+      <h2
+        id={labelId}
+        className={cn(sheet ? "sr-only" : "text-sm font-semibold")}
+      >
+        {t("nodeBrowserHeading")}
+      </h2>
+
+      <label
+        className={cn(
+          "relative flex shrink-0 flex-col",
+          sheet ? "px-0" : "gap-1",
+        )}
+      >
         <span className="sr-only">{t("searchNodes")}</span>
+        {sheet ? (
+          <Search
+            aria-hidden
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          />
+        ) : null}
         <input
           ref={searchRef}
           type="search"
           value={query}
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchNodes")}
-          className="border-input bg-background focus-visible:ring-ring rounded-md border px-2 py-1.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
+          className={cn(
+            "border-input bg-background focus-visible:ring-ring rounded-md border focus-visible:ring-2 focus-visible:outline-none",
+            sheet
+              ? "h-11 w-full ps-9 pe-3 text-base"
+              : "px-2 py-1.5 text-sm",
+          )}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onSearchKeyDown}
         />
@@ -194,14 +223,16 @@ export function NodeBrowser({
             {t("noMatchingNodes")}
           </p>
         ) : (
-          <ul role="group" className="flex flex-col gap-0.5 py-0.5">
+          <ul
+            role="group"
+            className={cn("flex flex-col", sheet ? "gap-0.5 py-1" : "gap-0.5 py-0.5")}
+          >
             {result.nodes.map((node) => {
               const isFocused = node.id === focusedId;
               const isActive = navIds[activeIndex] === node.id;
-              const displayLabel =
-                map.nodes[node.id]?.markdown.trim().length === 0
-                  ? t("emptyNode")
-                  : node.label;
+              const isEmpty =
+                map.nodes[node.id]?.markdown.trim().length === 0;
+              const displayLabel = isEmpty ? t("emptyNode") : node.label;
               const guides = guidesById.get(node.id) ?? {
                 continues: [],
                 isLast: true,
@@ -216,14 +247,33 @@ export function NodeBrowser({
                     data-browser-node={node.id}
                     data-testid={`browser-node-${node.id}`}
                     className={cn(
-                      "hover:bg-accent flex w-full items-stretch rounded-md py-1 pe-2 text-start text-sm",
-                      isFocused && "ring-ring bg-accent/60 ring-1 ring-inset",
+                      "hover:bg-accent/50 flex w-full items-stretch rounded-md pe-2 text-start transition-colors",
+                      "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+                      sheet ? "min-h-12 py-2.5 text-base" : "py-1 text-sm",
+                      isFocused &&
+                        "ring-ring bg-accent/60 ring-1 ring-inset",
                       isActive && !isFocused && "bg-muted/60",
                     )}
                     onClick={() => selectNode(node.id)}
                   >
                     <TreeGuideRail depth={node.depth} guides={guides} />
-                    <span className="min-w-0 flex-1 truncate ps-1.5">
+                    {sheet ? (
+                      <span className="text-foreground/80 flex items-center ps-1.5">
+                        <Circle
+                          className={cn(
+                            "size-4 shrink-0",
+                            isFocused && "fill-primary text-primary",
+                          )}
+                          aria-hidden
+                        />
+                      </span>
+                    ) : null}
+                    <span
+                      className={cn(
+                        "flex min-w-0 flex-1 items-center truncate ps-2",
+                        isEmpty && "text-muted-foreground italic",
+                      )}
+                    >
                       {highlightLabel(displayLabel, query)}
                     </span>
                   </button>

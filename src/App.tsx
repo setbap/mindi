@@ -1,14 +1,24 @@
 import { useEffect, useRef, useState } from "react";
+import { FolderOpen, Languages } from "lucide-react";
 
 import { MapCanvas, type MapCanvasHandle } from "@/components/map-canvas";
 import { MapManager } from "@/components/map-manager";
+import {
+  MobileActionChrome,
+  MobileTopChrome,
+} from "@/components/mobile-action-chrome";
 import { NodeBrowser } from "@/components/node-browser";
 import { StructureCommands } from "@/components/structure-commands";
 import { StructureLiveRegion } from "@/components/structure-live-region";
 import { StyleCommands } from "@/components/style-commands";
 import { ToolsPanel } from "@/components/tools-panel";
 import { Button } from "@/components/ui/button";
-import { FolderOpen } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { focusedIdOf, isEditing } from "@/domain/interaction";
 import type { Language } from "@/domain/types";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
@@ -17,6 +27,8 @@ import { t as translate } from "@/i18n/t";
 import { bindVisibleViewport } from "@/shell/bind-visible-viewport";
 import { PwaControls } from "@/pwa/pwa-controls";
 import { useMindiApp, type MindiAppController } from "./app/use-mindi-app";
+
+type MobileDrawer = "browser" | "structure" | "style" | null;
 
 type ReadyController = MindiAppController & {
   state: Extract<MindiAppController["state"], { status: "ready" }>;
@@ -96,6 +108,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
   const isDesktop = useIsDesktop();
   const { catalog, openMap, mode, canUndo, canRedo } = state;
   const [managerOpen, setManagerOpen] = useState(false);
+  const [mobileDrawer, setMobileDrawer] = useState<MobileDrawer>(null);
   const [renaming, setRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(openMap.name);
   const canvasRef = useRef<MapCanvasHandle>(null);
@@ -105,6 +118,14 @@ function ReadyApp({ app }: { app: ReadyController }) {
   const dir = chromeDir(language);
   const lang = chromeLang(language);
   const editing = isEditing(mode);
+
+  function openMobileDrawer(next: Exclude<MobileDrawer, null>) {
+    setMobileDrawer(next);
+  }
+
+  function closeMobileDrawer() {
+    setMobileDrawer(null);
+  }
 
   focusedIdRef.current = focusedIdOf(mode);
 
@@ -152,7 +173,11 @@ function ReadyApp({ app }: { app: ReadyController }) {
       if (target.closest('[data-map-rename="true"]')) {
         return;
       }
-      if (target.closest('[role="dialog"], [data-radix-portal]')) {
+      if (
+        target.closest(
+          '[role="dialog"], [data-radix-portal], [data-vaul-drawer]',
+        )
+      ) {
         return;
       }
       if (
@@ -197,11 +222,32 @@ function ReadyApp({ app }: { app: ReadyController }) {
   }
 
   function exitCanvasToBrowser() {
+    if (!isDesktop) {
+      openMobileDrawer("browser");
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLInputElement>(
+            '[data-testid="map-node-browser"] input[type="search"]',
+          )
+          ?.focus();
+      });
+      return;
+    }
     document
       .querySelector<HTMLInputElement>(
         '[data-testid="map-node-browser"] input[type="search"]',
       )
       ?.focus();
+  }
+
+  function revealFromBrowser(nodeId: string) {
+    revealOnCanvas(nodeId);
+    closeMobileDrawer();
+  }
+
+  function openMapsFromMobile() {
+    closeMobileDrawer();
+    setManagerOpen(true);
   }
 
   function beginRename() {
@@ -260,37 +306,6 @@ function ReadyApp({ app }: { app: ReadyController }) {
         {openMap.name}
       </button>
     </h1>
-  );
-
-  const mobileCommands = (
-    <>
-      <StructureCommands
-        map={openMap}
-        mode={mode}
-        onCreateRoot={createRoot}
-        onMoveUp={moveUp}
-        onMoveDown={moveDown}
-        onMoveUnder={moveUnder}
-        onSwapWithParent={swapWithParent}
-        onDetach={detach}
-        onDelete={deleteNode}
-      />
-      <StyleCommands
-        map={openMap}
-        mode={mode}
-        catalog={catalog}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onSetWidth={setWidth}
-        onResetWidth={resetWidth}
-        onSetColorSlot={setColorSlot}
-        onUpdatePalette={(slot, hex) => {
-          void updatePalette(slot, hex);
-        }}
-        onUndo={undo}
-        onRedo={redo}
-      />
-    </>
   );
 
   const canvas = (
@@ -362,8 +377,8 @@ function ReadyApp({ app }: { app: ReadyController }) {
                       variant="secondary"
                       size="sm"
                       className="size-8 p-0"
-                      title={t("maps")}
-                      aria-label={t("maps")}
+                      title={t("mapManager")}
+                      aria-label={t("mapManager")}
                       onClick={() => setManagerOpen(true)}
                     >
                       <FolderOpen />
@@ -429,82 +444,143 @@ function ReadyApp({ app }: { app: ReadyController }) {
           </>
         ) : (
           <>
-            <header className="flex shrink-0 items-center justify-between gap-4 p-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-muted-foreground text-sm">{t("brand")}</p>
-                {renaming ? (
-                  <input
-                    ref={renameInputRef}
-                    data-map-rename="true"
-                    data-testid="map-title-input"
-                    aria-label={t("renameMap", { name: openMap.name })}
-                    className="border-input bg-background focus-visible:ring-ring w-full max-w-sm rounded-md border px-2 py-1 text-2xl font-semibold focus-visible:ring-2 focus-visible:outline-none"
-                    value={renameDraft}
-                    onChange={(event) => setRenameDraft(event.target.value)}
-                    onBlur={commitRename}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === "Escape") {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        commitRename();
-                      }
-                    }}
-                  />
-                ) : (
-                  <h1 className="text-2xl font-semibold">
-                    <button
-                      type="button"
-                      className="hover:text-primary text-start"
-                      onClick={beginRename}
-                      data-testid="map-title"
-                    >
-                      {openMap.name}
-                    </button>
-                  </h1>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <span className="sr-only">{t("language")}</span>
-                  <select
-                    aria-label={t("language")}
-                    className="border-input bg-background rounded-md border px-2 py-1.5"
-                    value={language}
-                    onChange={(event) => {
-                      void setLanguage(event.target.value as Language);
-                    }}
-                    data-testid="language-select"
-                  >
-                    <option value="en">{t("languageEnglish")}</option>
-                    <option value="fa">{t("languagePersian")}</option>
-                  </select>
-                </label>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setManagerOpen(true)}
-                >
-                  {t("maps")}
-                </Button>
-              </div>
-            </header>
-
-            <PwaControls
-              editing={isEditing(mode)}
-              onDiscardDraft={cancelEdit}
-            />
-
-            <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
-              <div className="h-44 shrink-0">
-                <NodeBrowser
-                  map={openMap}
-                  mode={mode}
-                  onFocus={focusNode}
-                  onReveal={revealOnCanvas}
+            <div className="relative min-h-0 min-w-0 flex-1">
+              <div className="absolute inset-0 min-h-0 min-w-0">{canvas}</div>
+              <MobileTopChrome
+                title={mapTitle}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onUndo={undo}
+                onRedo={redo}
+              />
+              <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex flex-col gap-2 px-3 [&_>_*]:pointer-events-auto">
+                <PwaControls
+                  editing={isEditing(mode)}
+                  onDiscardDraft={cancelEdit}
                 />
               </div>
-              <div className="min-h-0 min-w-0 flex-1">{canvas}</div>
             </div>
+
+            <Drawer
+              open={mobileDrawer === "browser"}
+              onOpenChange={(open) => {
+                if (!open) {
+                  closeMobileDrawer();
+                }
+              }}
+              shouldScaleBackground
+            >
+              <DrawerContent
+                data-testid="mobile-browser-drawer"
+                className="max-h-[92vh]"
+              >
+                <DrawerHeader>
+                  <DrawerTitle>{t("nodeBrowserHeading")}</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex min-h-[min(70vh,32rem)] flex-1 flex-col">
+                  <NodeBrowser
+                    map={openMap}
+                    mode={mode}
+                    variant="sheet"
+                    onFocus={focusNode}
+                    onReveal={revealFromBrowser}
+                  />
+                </div>
+              </DrawerContent>
+            </Drawer>
+
+            <Drawer
+              open={mobileDrawer === "structure"}
+              onOpenChange={(open) => {
+                if (!open) {
+                  closeMobileDrawer();
+                }
+              }}
+              shouldScaleBackground
+            >
+              <DrawerContent data-testid="mobile-structure-drawer">
+                <DrawerHeader>
+                  <DrawerTitle>{t("toolsSectionStructure")}</DrawerTitle>
+                </DrawerHeader>
+                <StructureCommands
+                  map={openMap}
+                  mode={mode}
+                  layout="list"
+                  onCreateRoot={createRoot}
+                  onMoveUp={moveUp}
+                  onMoveDown={moveDown}
+                  onMoveUnder={moveUnder}
+                  onSwapWithParent={swapWithParent}
+                  onDetach={detach}
+                  onDelete={deleteNode}
+                />
+                <section className="mt-3 flex flex-col gap-0.5">
+                  <h3 className="text-lg font-semibold">
+                    {t("toolsSectionApp")}
+                  </h3>
+                  <button
+                    type="button"
+                    className="text-foreground hover:bg-accent/50 focus-visible:ring-ring flex h-12 w-full items-center gap-3 rounded-md px-1 text-base font-normal transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    title={t("mapManager")}
+                    aria-label={t("mapManager")}
+                    onClick={openMapsFromMobile}
+                  >
+                    <FolderOpen className="size-5 shrink-0" />
+                    <span className="truncate">{t("mapManager")}</span>
+                  </button>
+                  <label className="hover:bg-accent/50 flex h-12 w-full cursor-pointer items-center gap-3 rounded-md px-1">
+                    <Languages className="text-foreground size-5 shrink-0" />
+                    <span className="text-foreground shrink-0 text-base">
+                      {t("language")}
+                    </span>
+                    <select
+                      aria-label={t("language")}
+                      className="border-input bg-background text-foreground ms-auto h-9 min-w-0 flex-1 rounded-md border px-2 text-sm"
+                      value={language}
+                      onChange={(event) => {
+                        void setLanguage(event.target.value as Language);
+                      }}
+                      data-testid="language-select"
+                    >
+                      <option value="en">{t("languageEnglish")}</option>
+                      <option value="fa">{t("languagePersian")}</option>
+                    </select>
+                  </label>
+                </section>
+              </DrawerContent>
+            </Drawer>
+
+            <Drawer
+              open={mobileDrawer === "style"}
+              onOpenChange={(open) => {
+                if (!open) {
+                  closeMobileDrawer();
+                }
+              }}
+              shouldScaleBackground
+            >
+              <DrawerContent data-testid="mobile-style-drawer">
+                <DrawerHeader>
+                  <DrawerTitle>{t("toolsSectionStyle")}</DrawerTitle>
+                </DrawerHeader>
+                <StyleCommands
+                  map={openMap}
+                  mode={mode}
+                  catalog={catalog}
+                  layout="list"
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  onSetWidth={setWidth}
+                  onResetWidth={resetWidth}
+                  onSetColorSlot={setColorSlot}
+                  onUpdatePalette={(slot, hex) => {
+                    void updatePalette(slot, hex);
+                  }}
+                  onUndo={undo}
+                  onRedo={redo}
+                />
+              </DrawerContent>
+            </Drawer>
           </>
         )}
 
@@ -528,9 +604,21 @@ function ReadyApp({ app }: { app: ReadyController }) {
         hidden={isDesktop}
       >
         {!isDesktop ? (
-          <div className="flex max-h-36 flex-col gap-2 overflow-y-auto">
-            {mobileCommands}
-          </div>
+          <MobileActionChrome
+            map={openMap}
+            mode={mode}
+            onCreateChild={() => {
+              createChild();
+              canvasRef.current?.focusHost();
+            }}
+            onCreateSibling={() => {
+              createSibling();
+              canvasRef.current?.focusHost();
+            }}
+            onOpenBrowser={() => openMobileDrawer("browser")}
+            onOpenStructure={() => openMobileDrawer("structure")}
+            onOpenStyle={() => openMobileDrawer("style")}
+          />
         ) : null}
       </footer>
     </main>

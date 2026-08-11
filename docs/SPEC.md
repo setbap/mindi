@@ -39,7 +39,7 @@ The Palette is one global persisted set of nine editable hex values. Nodes store
 Provide a responsive Map manager that lists Maps and offers Create, Rename, Delete, Switch, Import, and Export. It identifies the Open Map.
 
 - Desktop (`>=768px`): Dialog and optionally collapsible docked Node-browser sidebar.
-- Mobile (`<768px`): bottom Sheet. Use the same responsive overlay abstraction for every Dialog/Sheet pair.
+- Mobile (`<768px`): Vaul bottom Drawer. Use the same responsive overlay abstraction for every Dialog/Drawer pair.
 - First launch and Create make **Untitled Map** with one blank, Focused Root and a typing invitation.
 - Rename is inline: Enter or blur commits; Escape cancels.
 - Deleting the open Map switches to the next Map, otherwise the previous Map. The final Map's Delete action is disabled with an explanation.
@@ -135,7 +135,9 @@ Follow [ADR 0005](adr/0005-accessible-map-canvas.md).
 
 ### Mobile shell
 
-The mobile action bar is a shell-owned DOM sibling of React Flow, not a viewport child. Reserve it with a grid layout; use `interactive-widget=resizes-content`, safe-area padding, and a `VisualViewport` CSS-variable fallback. Do not baseline the experimental VirtualKeyboard overlay API. When viewport geometry changes, do not move Nodes; after resize settles, check Focused visibility at most once. See [mobile research](research/mobile-keyboard-aware-bottom-bar.md).
+The mobile action bar is a shell-owned DOM sibling of React Flow, not a viewport child. It overlays the full-bleed canvas (absolute bottom chrome) and must not reserve a layout row that shrinks the Map stage. Use `interactive-widget=resizes-content`, safe-area padding, and a `VisualViewport` CSS-variable fallback. Do not baseline the experimental VirtualKeyboard overlay API. When viewport geometry changes, do not move Nodes; after resize settles, check Focused visibility at most once. See [mobile research](research/mobile-keyboard-aware-bottom-bar.md).
+
+On mobile (`<768px`), the shell is a full-bleed canvas with overlay chrome: top undo / editable Map title / redo; bottom Structure+App and Style entry points, create-child, focused-Node pill (opens the Node browser Vaul drawer), and create-sibling. Structure, Style, and Node browser live in Vaul drawers (one open at a time). App controls (Maps, language) live in the Structure+App drawer.
 
 ## Markdown and clipboard
 
@@ -181,7 +183,7 @@ Production release testing must install online, close, launch offline, exercise 
 
 ## Visual system and language
 
-Use React, Vite, strict TypeScript, Tailwind CSS, and selectively installed shadcn/ui ([ADR 0003](adr/0003-tailwind-and-shadcn-ui.md)). Use Gruvbox-dark semantic CSS tokens for surfaces, text, borders, depth, destructive actions, and focus rings. Palette remains separate from Theme. Use shadcn Sonner for non-blocking notices; do not add MUI or Vaul.
+Use React, Vite, strict TypeScript, Tailwind CSS, and selectively installed shadcn/ui ([ADR 0003](adr/0003-tailwind-and-shadcn-ui.md)). Use Gruvbox-dark semantic CSS tokens for surfaces, text, borders, depth, destructive actions, and focus rings. Palette remains separate from Theme. Use shadcn Sonner for non-blocking notices. Use **Vaul** for mobile bottom drawers; do not add MUI. Desktop overlays remain Dialog-based.
 
 Language is a persisted application setting: English by default and Persian when chosen by the user. Translate all shipped visible UI, dialogs, notices, and accessibility labels. Persian uses RTL chrome and moves the sidebar to the right, but **never reverses the Map**: layout, Root/sibling order, traversal, shortcuts, and Connector direction remain left-to-right. Node text uses `dir="auto"`. JSON fields, technical errors, keyboard shortcuts, and Map structure are locale-neutral; missing translations fall back to English.
 
@@ -196,7 +198,7 @@ Language is a persisted application setting: English by default and Persian when
 1. Repository/domain tests cover all non-empty forest invariants, ID/order persistence, migrations, import validation/remapping, undo boundaries, delete fallback focus, and all structure commands.
 2. Layout tests cover multi-Root forests, dynamic widths, add/reparent/detach/resize/content changes, and assert zero positive-area overlap. A canvas integration test verifies the rendered projection as well.
 3. Keyboard/a11y tests cover Focused/Editing transitions, canvas entry/exit, active descendant, Node browser parity/search, visible focus, live feedback, pointer-equivalent commands, and reduced motion.
-4. Responsive tests cover desktop Dialog/mobile Sheet, Persian sidebar direction without canvas reversal, and a real/emulated iOS and Android keyboard scenario where editor and essential actions remain visible.
+4. Responsive tests cover desktop Dialog/mobile Vaul Drawer, Persian sidebar direction without canvas reversal, and a real/emulated iOS and Android keyboard scenario where editor and essential actions remain visible.
 5. Markdown tests cover raw HTML, URL filtering, task display, image failure fallback, and plain-text clipboard normalization.
 6. PWA tests run against a production build: successful install online, later offline launch and CRUD, offline deep-link, precache coverage, and prompt update with active-edit safeguards.
 7. Performance tests use the 512-Node fixture and enforce the stated desktop/mobile load/layout budgets without a hard Node limit.

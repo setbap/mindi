@@ -32,7 +32,7 @@ test("large imported Maps warn without imposing a hard Node limit", async ({
 }) => {
   const map = createLargeMapFixture(513);
   await page.goto("/");
-  await page.getByRole("button", { name: "Maps" }).click();
+  await page.getByRole("button", { name: "Map manager" }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: "scale.mindi.json",
     mimeType: "application/vnd.mindi+json",

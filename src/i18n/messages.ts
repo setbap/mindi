@@ -10,6 +10,8 @@ export type MessageKey =
   | "noMatchingNodes"
   | "mapCanvas"
   | "createRoot"
+  | "createChild"
+  | "createSibling"
   | "moveUp"
   | "moveDown"
   | "moveUnder"
@@ -96,6 +98,8 @@ const en: Messages = {
   noMatchingNodes: "No matching nodes",
   mapCanvas: "Map canvas",
   createRoot: "Create Root",
+  createChild: "Create child",
+  createSibling: "Create sibling",
   moveUp: "Move up",
   moveDown: "Move down",
   moveUnder: "Move under",
@@ -184,6 +188,8 @@ const fa: Messages = {
   noMatchingNodes: "گره منطبقی نیست",
   mapCanvas: "بوم نقشه",
   createRoot: "ایجاد ریشه",
+  createChild: "ایجاد فرزند",
+  createSibling: "ایجاد هم‌سطح",
   moveUp: "جابه‌جایی به بالا",
   moveDown: "جابه‌جایی به پایین",
   moveUnder: "انتقال به زیر",

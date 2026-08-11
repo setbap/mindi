@@ -90,6 +90,7 @@ export function StyleCommands({
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [draftWidth, setDraftWidth] = useState(String(DEFAULT_NODE_WIDTH));
   const rail = layout === "rail";
+  const list = layout === "list";
 
   const editing = isEditing(mode);
   const focusedId = focusedIdOf(mode);
@@ -133,9 +134,11 @@ export function StyleCommands({
   const colorSlots = (
     <div
       className={
-        rail
-          ? "grid grid-cols-4 gap-1 py-0.5"
-          : "flex flex-wrap items-center gap-1.5"
+        list
+          ? "flex flex-wrap items-center gap-2 px-1 py-1"
+          : rail
+            ? "grid grid-cols-4 gap-1.5 py-0.5"
+            : "flex flex-wrap items-center gap-1.5"
       }
       role="group"
       aria-label={t("colorSlot")}
@@ -150,7 +153,7 @@ export function StyleCommands({
           disabled={editing || !focused}
           className={cn(
             "rounded-[3px] shadow-[inset_0_0_0_1px_rgb(0_0_0_/_0.35)] transition-[box-shadow,transform] disabled:opacity-40",
-            rail ? "aspect-square w-full" : "size-5",
+            list ? "size-7" : rail ? "aspect-square w-full" : "size-5",
             "hover:scale-105 hover:shadow-[inset_0_0_0_1px_rgb(0_0_0_/_0.5)]",
             focused?.colorSlot === slot &&
               "shadow-[inset_0_0_0_1px_rgb(0_0_0_/_0.45),0_0_0_2px_var(--card),0_0_0_3.5px_var(--ring)]",
@@ -224,6 +227,92 @@ export function StyleCommands({
       </ResponsiveOverlay>
     </>
   );
+
+  if (list) {
+    return (
+      <div
+        className="flex w-full flex-col gap-0.5"
+        data-testid="style-commands"
+        aria-label={t("styleCommands")}
+      >
+        <button
+          type="button"
+          disabled={editing || !focused}
+          title={t("resize")}
+          aria-label={t("resize")}
+          onClick={() => setResizeOpen(true)}
+          className={cn(
+            "text-foreground hover:bg-accent/50 flex h-12 w-full items-center gap-3 rounded-md px-1 text-base font-normal transition-colors",
+            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+            "disabled:pointer-events-none disabled:opacity-40",
+          )}
+        >
+          <Maximize2 className="size-5 shrink-0" />
+          <span className="truncate">{t("resize")}</span>
+        </button>
+        <button
+          type="button"
+          disabled={editing || !focused}
+          title={t("resetWidth")}
+          aria-label={t("resetWidth")}
+          onClick={onResetWidth}
+          className={cn(
+            "text-foreground hover:bg-accent/50 flex h-12 w-full items-center gap-3 rounded-md px-1 text-base font-normal transition-colors",
+            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+            "disabled:pointer-events-none disabled:opacity-40",
+          )}
+        >
+          <RotateCcw className="size-5 shrink-0" />
+          <span className="truncate">{t("resetWidth")}</span>
+        </button>
+        <button
+          type="button"
+          title={t("palette")}
+          aria-label={t("palette")}
+          onClick={() => setPaletteOpen(true)}
+          className={cn(
+            "text-foreground hover:bg-accent/50 flex h-12 w-full items-center gap-3 rounded-md px-1 text-base font-normal transition-colors",
+            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+          )}
+        >
+          <Palette className="size-5 shrink-0" />
+          <span className="truncate">{t("palette")}</span>
+        </button>
+        <button
+          type="button"
+          disabled={!canUndo}
+          title={t("undo")}
+          aria-label={t("undo")}
+          onClick={onUndo}
+          className={cn(
+            "text-foreground hover:bg-accent/50 flex h-12 w-full items-center gap-3 rounded-md px-1 text-base font-normal transition-colors",
+            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+            "disabled:pointer-events-none disabled:opacity-40",
+          )}
+        >
+          <Undo2 className="size-5 shrink-0" />
+          <span className="truncate">{t("undo")}</span>
+        </button>
+        <button
+          type="button"
+          disabled={!canRedo}
+          title={t("redo")}
+          aria-label={t("redo")}
+          onClick={onRedo}
+          className={cn(
+            "text-foreground hover:bg-accent/50 flex h-12 w-full items-center gap-3 rounded-md px-1 text-base font-normal transition-colors",
+            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+            "disabled:pointer-events-none disabled:opacity-40",
+          )}
+        >
+          <Redo2 className="size-5 shrink-0" />
+          <span className="truncate">{t("redo")}</span>
+        </button>
+        <div className="pt-2">{colorSlots}</div>
+        {overlays}
+      </div>
+    );
+  }
 
   if (rail) {
     return (

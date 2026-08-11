@@ -380,7 +380,7 @@ describe("App Map manager", () => {
       ).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Maps" }));
+    await user.click(screen.getByRole("button", { name: "Map manager" }));
     expect(screen.getByTestId("map-manager-dialog")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Create Map" }));
@@ -407,7 +407,7 @@ describe("App Map manager", () => {
       ).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Maps" }));
+    await user.click(screen.getByRole("button", { name: "Map manager" }));
     const catalogAgain = screen.getByRole("list", { name: "Map catalog" });
     const firstRow = within(catalogAgain).getAllByRole("listitem")[0];
     await user.click(within(firstRow).getByRole("button", { name: "Switch" }));
@@ -418,7 +418,7 @@ describe("App Map manager", () => {
       ).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Maps" }));
+    await user.click(screen.getByRole("button", { name: "Map manager" }));
     const openManager = screen.getByRole("list", { name: "Map catalog" });
     const notesRow = within(openManager).getAllByRole("listitem")[1];
     await user.click(within(notesRow).getByRole("button", { name: "Delete" }));
@@ -430,7 +430,7 @@ describe("App Map manager", () => {
       ).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Maps" }));
+    await user.click(screen.getByRole("button", { name: "Map manager" }));
     expect(
       screen.getByText(/The final Map cannot be deleted/i),
     ).toBeInTheDocument();

@@ -8,12 +8,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
 
 interface ResponsiveOverlayProps {
@@ -25,7 +25,7 @@ interface ResponsiveOverlayProps {
   contentTestId?: string;
 }
 
-/** Shared Dialog (desktop) / Sheet (mobile) overlay abstraction. */
+/** Shared Dialog (desktop) / Vaul Drawer (mobile) overlay abstraction. */
 export function ResponsiveOverlay({
   open,
   onOpenChange,
@@ -53,16 +53,16 @@ export function ResponsiveOverlay({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent data-testid={contentTestId}>
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
+    <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground>
+      <DrawerContent data-testid={contentTestId}>
+        <DrawerHeader>
+          <DrawerTitle>{title}</DrawerTitle>
           {description ? (
-            <SheetDescription>{description}</SheetDescription>
+            <DrawerDescription>{description}</DrawerDescription>
           ) : null}
-        </SheetHeader>
+        </DrawerHeader>
         {children}
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

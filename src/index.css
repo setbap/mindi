@@ -75,10 +75,12 @@
   }
 
   .app-shell {
+    position: relative;
     block-size: var(--visible-viewport-height);
     min-block-size: 0;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    /* Canvas owns the full shell; mobile chrome overlays (does not reserve a row). */
+    grid-template-rows: minmax(0, 1fr);
     transform: translateY(var(--visible-viewport-offset-top));
     overflow: hidden;
     padding-top: env(safe-area-inset-top, 0px);
@@ -108,7 +110,7 @@
 
   .browser-tree {
     scrollbar-width: thin;
-    scrollbar-color: var(--border) var(--card);
+    scrollbar-color: var(--border) transparent;
   }
 
   .browser-tree::-webkit-scrollbar {
@@ -117,13 +119,12 @@
   }
 
   .browser-tree::-webkit-scrollbar-track {
-    background: var(--card);
+    background: transparent;
   }
 
   .browser-tree::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 999px;
-    border: 2px solid var(--card);
   }
 
   .browser-tree::-webkit-scrollbar-thumb:hover {
@@ -183,13 +184,22 @@
   }
 
   .bottom-actions {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
     display: flex;
     flex-direction: column;
     gap: var(--bar-gap);
     padding: 0.5rem 0.75rem calc(0.5rem + var(--bottom-safe));
-    border-top: 1px solid var(--border);
-    background: var(--card);
-    box-shadow: var(--depth);
+    pointer-events: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .bottom-actions > * {
+    pointer-events: auto;
   }
 
   .bottom-actions[hidden] {

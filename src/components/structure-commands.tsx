@@ -30,7 +30,7 @@ import type { MapRecord } from "@/domain/types";
 import { useI18n } from "@/i18n/i18n-context";
 import { cn } from "@/lib/utils";
 
-export type CommandLayout = "toolbar" | "rail";
+export type CommandLayout = "toolbar" | "rail" | "list";
 
 interface StructureCommandsProps {
   map: MapRecord;
@@ -43,6 +43,43 @@ interface StructureCommandsProps {
   onSwapWithParent: () => void;
   onDetach: () => void;
   onDelete: () => void;
+}
+
+function ListButton({
+  label,
+  icon,
+  disabled,
+  destructive,
+  title,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  disabled?: boolean;
+  destructive?: boolean;
+  title?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      title={title ?? label}
+      aria-label={label}
+      onClick={onClick}
+      className={cn(
+        "text-foreground hover:bg-accent/50 flex h-12 w-full items-center gap-3 rounded-md px-1 text-base font-normal transition-colors",
+        "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+        "disabled:pointer-events-none disabled:opacity-40",
+        destructive && "text-destructive hover:bg-destructive/10",
+      )}
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center [&_svg]:size-5">
+        {icon}
+      </span>
+      <span className="truncate">{label}</span>
+    </button>
+  );
 }
 
 function RailButton({
@@ -92,6 +129,7 @@ export function StructureCommands({
   const [moveUnderOpen, setMoveUnderOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const rail = layout === "rail";
+  const list = layout === "list";
 
   const editing = isEditing(mode);
   const focusedId = focusedIdOf(mode);
@@ -138,7 +176,7 @@ export function StructureCommands({
       if (target.closest("textarea, input, select, [contenteditable='true']")) {
         return;
       }
-      if (target.closest('[role="dialog"], [data-radix-portal]')) {
+      if (target.closest('[role="dialog"], [data-radix-portal], [data-vaul-drawer]')) {
         return;
       }
       if (!deleteEnabled) {
@@ -161,7 +199,7 @@ export function StructureCommands({
     <>
       {finalNodeBlocked ? (
         <div
-          className="pointer-events-none fixed end-3 bottom-3 z-50 max-w-xs"
+          className="pointer-events-none fixed end-3 bottom-[calc(5.75rem+var(--bottom-safe))] z-50 max-w-xs md:bottom-3"
           data-testid="final-node-delete-guard"
         >
           <p
@@ -220,6 +258,64 @@ export function StructureCommands({
       </ResponsiveOverlay>
     </>
   );
+
+  if (list) {
+    return (
+      <div
+        className="flex flex-col gap-0.5"
+        data-testid="structure-commands"
+        aria-label={t("structureCommands")}
+      >
+        <ListButton
+          label={t("createRoot")}
+          icon={<GitBranchPlus />}
+          disabled={editing}
+          onClick={onCreateRoot}
+        />
+        <ListButton
+          label={t("moveUp")}
+          icon={<ArrowUp />}
+          disabled={!moveUpEnabled}
+          onClick={onMoveUp}
+        />
+        <ListButton
+          label={t("moveDown")}
+          icon={<ArrowDown />}
+          disabled={!moveDownEnabled}
+          onClick={onMoveDown}
+        />
+        <ListButton
+          label={t("moveUnder")}
+          icon={<CornerDownRight />}
+          disabled={targets.length === 0}
+          onClick={() => setMoveUnderOpen(true)}
+        />
+        <ListButton
+          label={t("swapWithParent")}
+          icon={<Replace />}
+          disabled={!swapEnabled}
+          onClick={onSwapWithParent}
+        />
+        <ListButton
+          label={t("detach")}
+          icon={<Unlink />}
+          disabled={!detachEnabled}
+          onClick={onDetach}
+        />
+        <ListButton
+          label={t("delete")}
+          icon={<Trash2 />}
+          destructive
+          disabled={!deleteEnabled}
+          title={
+            finalNodeBlocked ? t("finalNodeCannotDelete") : t("delete")
+          }
+          onClick={requestDelete}
+        />
+        {overlays}
+      </div>
+    );
+  }
 
   if (rail) {
     return (

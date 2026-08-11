@@ -1,3 +1,3 @@
-# Tailwind and shadcn/ui provide the responsive visual system
+# Tailwind, shadcn/ui, and Vaul provide the responsive visual system
 
-Mindi uses Tailwind CSS and selectively installed shadcn/ui components, styled with Gruvbox-dark semantic tokens, instead of MUI or an all-inclusive component library. shadcn Dialog is used at desktop widths and shadcn Sheet at mobile widths through a shared responsive overlay wrapper; shadcn Sonner provides non-blocking notices. This keeps components locally customizable and avoids a heavyweight runtime UI kit while retaining accessible primitives.
+Mindi uses Tailwind CSS and selectively installed shadcn/ui components, styled with Gruvbox-dark semantic tokens, instead of MUI or an all-inclusive component library. shadcn Dialog is used at desktop widths. Mobile bottom sheets use **Vaul** (via a local Drawer wrapper) through the shared responsive overlay abstraction — not Radix Sheet. shadcn Sonner provides non-blocking notices. This keeps components locally customizable, gives iOS-style drawer interaction on mobile, and avoids a heavyweight runtime UI kit while retaining accessible primitives.

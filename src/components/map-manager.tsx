@@ -173,8 +173,7 @@ export function MapManager({
     <ResponsiveOverlay
       open={open}
       onOpenChange={onOpenChange}
-      title={t("maps")}
-      description={t("mapManager")}
+      title={t("mapManager")}
       contentTestId={isDesktop ? "map-manager-dialog" : "map-manager-sheet"}
     >
       <div className="flex flex-col gap-4">

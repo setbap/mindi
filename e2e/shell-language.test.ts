@@ -9,7 +9,7 @@ test("Persian chrome is RTL with sidebar on the right and LTR Map canvas", async
   await page.getByTestId("language-select").selectOption("fa");
   await expect(page.getByTestId("app-shell")).toHaveAttribute("dir", "rtl");
   await expect(page.getByTestId("app-shell")).toHaveAttribute("lang", "fa");
-  await expect(page.getByRole("button", { name: "نقشه‌ها" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "مدیریت نقشه‌ها" })).toBeVisible();
 
   const browser = page.getByTestId("map-node-browser");
   const canvas = page.getByTestId("map-canvas");
@@ -37,14 +37,43 @@ test("Persian chrome is RTL with sidebar on the right and LTR Map canvas", async
   await expect(page.getByTestId("app-shell")).toHaveAttribute("dir", "rtl");
 });
 
-test("mobile action bar keeps structure commands visible", async ({ page }) => {
+test("mobile action chrome exposes undo redo create and node browser sheet", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
   const bar = page.getByTestId("mobile-action-bar");
   await expect(bar).toBeVisible();
-  await expect(bar.getByTestId("structure-commands")).toBeVisible();
-  await expect(bar.getByRole("button", { name: "Create Root" })).toBeVisible();
+  await expect(bar.getByTestId("mobile-create-child")).toBeVisible();
+  await expect(bar.getByTestId("mobile-create-sibling")).toBeVisible();
+  await expect(bar.getByTestId("mobile-focused-pill")).toBeVisible();
+  await expect(bar.getByTestId("mobile-open-structure")).toBeVisible();
+  await expect(bar.getByTestId("mobile-open-style")).toBeVisible();
+
+  await expect(page.getByTestId("mobile-undo")).toBeVisible();
+  await expect(page.getByTestId("mobile-redo")).toBeVisible();
+  await expect(page.getByTestId("map-title")).toBeVisible();
+
+  // Structure commands live in the Structure+App drawer, not the bar.
+  await expect(bar.getByTestId("structure-commands")).toHaveCount(0);
+  await page.getByTestId("mobile-open-structure").click();
+  const structureDrawer = page.getByTestId("mobile-structure-drawer");
+  await expect(structureDrawer).toBeVisible();
+  await expect(structureDrawer.getByTestId("structure-commands")).toBeVisible();
+  await expect(
+    structureDrawer.getByRole("button", { name: "Create Root" }),
+  ).toBeVisible();
+  await expect(structureDrawer.getByTestId("language-select")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(structureDrawer).toBeHidden();
+
+  await page.getByTestId("mobile-focused-pill").click();
+  const browserDrawer = page.getByTestId("mobile-browser-drawer");
+  await expect(browserDrawer).toBeVisible();
+  await expect(browserDrawer.getByTestId("map-node-browser")).toBeVisible();
+  await browserDrawer.getByRole("treeitem").first().click();
+  await expect(browserDrawer).toBeHidden();
 
   // Emulate on-screen keyboard shrinking the visual viewport.
   await page.evaluate(() => {
