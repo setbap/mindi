@@ -226,6 +226,7 @@ function MapCanvasFlow({
   const hostRef = useRef<HTMLDivElement>(null);
   const keepHostFocusedRef = useRef(false);
   const prevFocusedIdRef = useRef<string | null>(null);
+  const skipRevealOnFocusRef = useRef(false);
   const didFitRef = useRef(false);
   const layoutRef = useRef<LayoutResult>(EMPTY_LAYOUT);
   const layoutSchedulerRef = useRef<LatestLayoutScheduler | null>(null);
@@ -324,6 +325,9 @@ function MapCanvasFlow({
 
   const focusNodeOnCanvas = useCallback(
     (nodeId: string) => {
+      // Pointer focus on the canvas should not pan/center — only keyboard
+      // create/arrows and explicit Node browser reveal should.
+      skipRevealOnFocusRef.current = true;
       onFocus(nodeId);
       hostRef.current?.focus({ preventScroll: true });
     },
@@ -398,12 +402,17 @@ function MapCanvasFlow({
     prevNodeCountRef.current = count;
   }, [map.nodes]);
 
-  // Same path as Node browser `onReveal`: when focus moves (arrows, create,
-  // browser, canvas click), center that Node immediately.
+  // Center when focus moves via keyboard create/arrows (and Node browser still
+  // calls revealNode explicitly). Canvas pointer clicks skip this path.
   useEffect(() => {
     const previous = prevFocusedIdRef.current;
     prevFocusedIdRef.current = focusedId;
+    const skipReveal = skipRevealOnFocusRef.current;
+    skipRevealOnFocusRef.current = false;
     if (previous === null || previous === focusedId) {
+      return;
+    }
+    if (skipReveal) {
       return;
     }
     if (!viewportInitialized || paneWidth < 40 || paneHeight < 40) {

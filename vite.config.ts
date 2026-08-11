@@ -18,8 +18,10 @@ export default defineConfig({
         start_url: "/",
         scope: "/",
         display: "standalone",
+        display_override: ["standalone", "browser"],
         theme_color: "#282828",
         background_color: "#282828",
+        categories: ["productivity"],
         icons: [
           {
             src: "/mindi-192.svg",

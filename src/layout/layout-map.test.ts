@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createLastChild, createSiblingBelow } from "@/domain/structure";
 import { createUntitledMap } from "@/domain/forest";
+import { createLastChild, createSiblingBelow } from "@/domain/structure";
 import type { MapRecord } from "@/domain/types";
 import {
+  enforceDomainVerticalOrder,
   hasPositiveAreaOverlap,
   layoutMap,
   NODE_SEP,
@@ -118,6 +119,28 @@ describe("layoutMap", () => {
       child2.newNodeId,
     ]);
     expect(a.y).toBeLessThan(b.y);
+  });
+
+  it("packs unequal-height siblings without overlap when visual order was inverted", () => {
+    let map = createUntitledMap("map-1");
+    const first = map.rootIds[0];
+    const second = createSiblingBelow(map, first);
+    map = second.map;
+
+    // Short root visually above tall root — the old top-permutation reorder
+    // would place tall at y=0 and short at y=80 and overlap.
+    const inverted = [
+      { id: first, x: 0, y: 80, width: 280, height: 300 },
+      { id: second.newNodeId, x: 0, y: 0, width: 280, height: 48 },
+    ];
+
+    const packed = enforceDomainVerticalOrder(map, inverted);
+    expect(hasPositiveAreaOverlap(packed)).toBe(false);
+
+    const tall = packed.find((node) => node.id === first)!;
+    const short = packed.find((node) => node.id === second.newNodeId)!;
+    expect(tall.y).toBeLessThan(short.y);
+    expect(short.y).toBeGreaterThanOrEqual(tall.y + tall.height + NODE_SEP - 0.01);
   });
 
   it("uses 64px rank spacing and 32px sibling spacing constants", () => {

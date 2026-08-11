@@ -120,6 +120,13 @@ function ReadyApp({ app }: { app: ReadyController }) {
   }, [language, dir, lang]);
 
   useEffect(() => {
+    document.title = `${t("brand")} - ${openMap.name}`;
+    return () => {
+      document.title = t("brand");
+    };
+  }, [openMap.name, t]);
+
+  useEffect(() => {
     if (!shellRef.current) {
       return;
     }

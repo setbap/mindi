@@ -64,8 +64,14 @@
     @apply border-border;
   }
 
+  html {
+    color-scheme: dark;
+    background-color: var(--background);
+  }
+
   body {
     @apply bg-background text-foreground min-h-screen antialiased;
+    background-color: var(--background);
   }
 
   .app-shell {
@@ -75,6 +81,8 @@
     grid-template-rows: minmax(0, 1fr) auto;
     transform: translateY(var(--visible-viewport-offset-top));
     overflow: hidden;
+    padding-top: env(safe-area-inset-top, 0px);
+    background-color: var(--background);
   }
 
   .app-workspace {

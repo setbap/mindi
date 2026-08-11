@@ -127,8 +127,11 @@ export function layoutMap(
 /**
  * Dagre LR can invert same-rank order. Re-pack each sibling/Root group so
  * earlier domain order sits above later order (canvas matches Node browser).
+ *
+ * Packs blocks top-to-bottom with {@link NODE_SEP} instead of permuting the
+ * original tops — unequal heights make top-permutation overlap.
  */
-function enforceDomainVerticalOrder(
+export function enforceDomainVerticalOrder(
   map: MapRecord,
   rects: LayoutRect[],
 ): LayoutRect[] {
@@ -160,27 +163,27 @@ function enforceDomainVerticalOrder(
       );
       return { members, top, height: bottom - top };
     });
-    const slotTops = [...blocks]
-      .map((block) => block.top)
-      .sort((a, b) => a - b);
 
-    for (let index = 0; index < blocks.length; index++) {
-      const block = blocks[index];
-      const delta = slotTops[index] - block.top;
-      if (delta === 0) {
-        continue;
+    // Anchor the group at its current topmost edge, then stack in domain order.
+    let y = Math.min(...blocks.map((block) => block.top));
+    for (const block of blocks) {
+      const delta = y - block.top;
+      if (delta !== 0) {
+        for (const member of block.members) {
+          member.y += delta;
+        }
       }
-      for (const member of block.members) {
-        member.y += delta;
-      }
+      y += block.height + NODE_SEP;
     }
   }
 
-  reorderGroup(map.rootIds);
-  for (const id of forestVisitOrder(map)) {
-    const childIds = map.nodes[id]?.childIds ?? [];
+  // Deepest groups first so parent/Root packing sees final subtree heights.
+  const visitOrder = forestVisitOrder(map);
+  for (let index = visitOrder.length - 1; index >= 0; index--) {
+    const childIds = map.nodes[visitOrder[index]]?.childIds ?? [];
     reorderGroup(childIds);
   }
+  reorderGroup(map.rootIds);
 
   return [...byId.values()];
 }
