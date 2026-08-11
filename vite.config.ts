@@ -14,13 +14,15 @@ export default defineConfig({
       manifest: {
         name: "Mindi",
         short_name: "Mindi",
-        description: "Local-first offline mind maps",
+        description:
+          "Offline mind maps that stay on your device. Create, edit, and organize Maps without an account—works fully offline after install.",
         start_url: "/",
         scope: "/",
         display: "standalone",
         display_override: ["standalone", "browser"],
-        theme_color: "#282828",
-        background_color: "#282828",
+        theme_color: "#181818",
+        background_color: "#181818",
+        lang: "en",
         categories: ["productivity"],
         icons: [
           {

@@ -1,11 +1,11 @@
 export type ThemeId =
+  | "cursor-dark"
   | "gruvbox"
   | "tokyo-night"
   | "catppuccin"
   | "nord"
   | "one-dark"
   | "github-dark"
-  | "cursor-dark"
   | "vercel"
   | "cloudflare";
 
@@ -15,9 +15,14 @@ export interface AppTheme {
   background: string;
 }
 
-export const DEFAULT_THEME_ID: ThemeId = "gruvbox";
+export const DEFAULT_THEME_ID: ThemeId = "cursor-dark";
 
 export const APP_THEMES: readonly AppTheme[] = [
+  {
+    id: "cursor-dark",
+    label: "Cursor Dark",
+    background: "#181818",
+  },
   {
     id: "gruvbox",
     label: "Gruvbox",
@@ -47,11 +52,6 @@ export const APP_THEMES: readonly AppTheme[] = [
     id: "github-dark",
     label: "GitHub Dark",
     background: "#0d1117",
-  },
-  {
-    id: "cursor-dark",
-    label: "Cursor Dark",
-    background: "#181818",
   },
   {
     id: "vercel",

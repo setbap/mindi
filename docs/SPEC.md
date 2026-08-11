@@ -173,7 +173,7 @@ Import is additive. Validate the envelope, display valid Maps for review/selecti
 
 Use Vite PWA / Workbox `generateSW` with an explicit manifest, `registerType: 'prompt'`, same-origin startup assets, generated precache, and `navigateFallback: '/index.html'`. Use explicit `virtual:pwa-register` callbacks; no core runtime cache or navigation preload baseline. See [offline research](research/offline-pwa-after-install.md).
 
-- Show **Install Mindi** only when the browser signals installability. Dismissal hides it until the next eligible session. Never show an unavailable/broken control.
+- Show **Install Mindi** only when the browser signals installability, with a short install description. Dismissal hides it until the next eligible session. Never show an unavailable/broken control.
 - After `onOfflineReady`, show one non-blocking **Mindi is ready to work offline** notice. Installation/first load alone is not proof.
 - On `onNeedRefresh`, show persistent **Update ready** with **Reload update** and **Later**. Never auto-reload.
 - If a Node is Editing when reload is requested, require **Finish editing** or **Discard draft and reload**.

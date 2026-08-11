@@ -2,8 +2,40 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Gruvbox-dark semantic Theme tokens (Palette accents stay separate). */
+/* Cursor Dark semantic Theme tokens (Palette accents stay separate). */
 :root {
+  --background: #181818;
+  --foreground: #cccccc;
+  --card: #1f1f1f;
+  --card-foreground: #cccccc;
+  --popover: #252526;
+  --popover-foreground: #cccccc;
+  --primary: #0078d4;
+  --primary-foreground: #ffffff;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #cccccc;
+  --muted: #2a2a2a;
+  --muted-foreground: #9d9d9d;
+  --accent: #2a2a2a;
+  --accent-foreground: #cccccc;
+  --destructive: #f14c4c;
+  --border: #3c3c3c;
+  --input: #3c3c3c;
+  --ring: #0078d4;
+  --radius: 0.5rem;
+  --depth: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 12px rgb(0 0 0 / 0.25);
+
+  --visible-viewport-height: 100dvh;
+  --visible-viewport-offset-top: 0px;
+  --bottom-safe: env(safe-area-inset-bottom, 0px);
+  --bar-gap: 0.5rem;
+
+  --dock-width: 16.5rem;
+  --canvas-grid-color: rgb(204 204 204 / 0.1);
+}
+
+/* Dark theme variants selected via data-theme on <html>. */
+[data-theme="gruvbox"] {
   --background: #282828;
   --foreground: #ebdbb2;
   --card: #3c3836;
@@ -22,19 +54,9 @@
   --border: #665c54;
   --input: #665c54;
   --ring: #fabd2f;
-  --radius: 0.5rem;
-  --depth: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 12px rgb(0 0 0 / 0.25);
-
-  --visible-viewport-height: 100dvh;
-  --visible-viewport-offset-top: 0px;
-  --bottom-safe: env(safe-area-inset-bottom, 0px);
-  --bar-gap: 0.5rem;
-
-  --dock-width: 16.5rem;
   --canvas-grid-color: rgb(168 153 132 / 0.12);
 }
 
-/* Dark theme variants selected via data-theme on <html>. */
 [data-theme="tokyo-night"] {
   --background: #1a1b26;
   --foreground: #c0caf5;
@@ -143,29 +165,6 @@
   --input: #30363d;
   --ring: #2f81f7;
   --canvas-grid-color: rgb(47 129 247 / 0.12);
-}
-
-/* Cursor / VS Code Dark Modern–inspired */
-[data-theme="cursor-dark"] {
-  --background: #181818;
-  --foreground: #cccccc;
-  --card: #1f1f1f;
-  --card-foreground: #cccccc;
-  --popover: #252526;
-  --popover-foreground: #cccccc;
-  --primary: #0078d4;
-  --primary-foreground: #ffffff;
-  --secondary: #2a2a2a;
-  --secondary-foreground: #cccccc;
-  --muted: #2a2a2a;
-  --muted-foreground: #9d9d9d;
-  --accent: #2a2a2a;
-  --accent-foreground: #cccccc;
-  --destructive: #f14c4c;
-  --border: #3c3c3c;
-  --input: #3c3c3c;
-  --ring: #0078d4;
-  --canvas-grid-color: rgb(204 204 204 / 0.1);
 }
 
 /* Vercel dashboard–inspired (near-black / zinc) */

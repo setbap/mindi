@@ -76,6 +76,7 @@ export type MessageKey =
   | "selectAtLeastOneMap"
   | "restorePalette"
   | "installMindi"
+  | "installMindiDescription"
   | "notNow"
   | "offlineReady"
   | "updateReady"
@@ -168,6 +169,8 @@ const en: Messages = {
   selectAtLeastOneMap: "Select at least one valid Map to import.",
   restorePalette: "Replace the current Palette with the file snapshot",
   installMindi: "Install Mindi",
+  installMindiDescription:
+    "Offline mind maps that stay on your device. Create, edit, and organize Maps without an account—works fully offline after install.",
   notNow: "Not now",
   offlineReady: "Mindi is ready to work offline",
   updateReady: "Update ready",
@@ -259,6 +262,8 @@ const fa: Messages = {
   selectAtLeastOneMap: "دست‌کم یک نقشهٔ معتبر را برای درون‌ریزی انتخاب کنید.",
   restorePalette: "پالت کنونی را با تصویر پالتِ فایل جایگزین کن",
   installMindi: "نصب میندی",
+  installMindiDescription:
+    "نقشه‌های ذهنی آفلاین که روی دستگاه شما می‌مانند. بدون حساب کاربری بسازید، ویرایش کنید و سازماندهی کنید—پس از نصب کاملاً آفلاین کار می‌کند.",
   notNow: "فعلاً نه",
   offlineReady: "میندی برای کار آفلاین آماده است",
   updateReady: "به‌روزرسانی آماده است",

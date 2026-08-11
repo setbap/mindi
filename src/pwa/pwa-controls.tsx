@@ -101,20 +101,28 @@ export function PwaControls({
     <>
       {installPrompt ? (
         <aside
-          className="bg-card flex flex-wrap items-center gap-2 rounded-md border p-2 shadow-sm"
+          className="bg-card flex max-w-sm flex-col gap-2 rounded-md border p-3 shadow-sm"
           aria-label={t("installMindi")}
         >
-          <Button type="button" size="sm" onClick={() => void install()}>
-            {t("installMindi")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={dismissInstall}
-          >
-            {t("notNow")}
-          </Button>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium">{t("installMindi")}</p>
+            <p className="text-muted-foreground text-xs leading-snug">
+              {t("installMindiDescription")}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" onClick={() => void install()}>
+              {t("installMindi")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={dismissInstall}
+            >
+              {t("notNow")}
+            </Button>
+          </div>
         </aside>
       ) : null}
 
