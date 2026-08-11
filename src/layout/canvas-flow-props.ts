@@ -17,6 +17,9 @@ export const MAP_CANVAS_FLOW_PROPS = {
   zoomOnScroll: true,
   zoomOnPinch: true,
   zoomOnDoubleClick: false,
+  /** Allow much smaller overview zoom on mobile canvases. */
+  minZoom: 0.05,
+  maxZoom: 2,
   deleteKeyCode: null,
   selectionKeyCode: null,
   multiSelectionKeyCode: null,

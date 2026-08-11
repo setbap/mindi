@@ -120,6 +120,12 @@ function ReadyApp({ app }: { app: ReadyController }) {
   const lang = chromeLang(language);
   const editing = isEditing(mode);
 
+  useEffect(() => {
+    if (editing) {
+      setMobileDrawer(null);
+    }
+  }, [editing]);
+
   function openMobileDrawer(next: Exclude<MobileDrawer, null>) {
     setMobileDrawer(next);
   }
@@ -476,12 +482,12 @@ function ReadyApp({ app }: { app: ReadyController }) {
             >
               <DrawerContent
                 data-testid="mobile-browser-drawer"
-                className="max-h-[92vh]"
+                className="h-[min(85dvh,var(--visible-viewport-height))]"
               >
                 <DrawerHeader>
                   <DrawerTitle>{t("nodeBrowserHeading")}</DrawerTitle>
                 </DrawerHeader>
-                <div className="flex min-h-[min(70vh,32rem)] flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   <NodeBrowser
                     map={openMap}
                     mode={mode}
@@ -539,7 +545,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
                     </span>
                     <select
                       aria-label={t("language")}
-                      className="border-input bg-background text-foreground ms-auto h-9 min-w-0 flex-1 rounded-md border px-2 text-sm"
+                      className="border-input bg-background text-foreground ms-auto h-9 min-w-0 flex-1 rounded-md border px-2 text-base"
                       value={language}
                       onChange={(event) => {
                         void setLanguage(event.target.value as Language);
@@ -608,7 +614,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
         aria-label={t("actionBar")}
         hidden={isDesktop}
       >
-        {!isDesktop ? (
+        {!isDesktop && !editing ? (
           <MobileActionChrome
             map={openMap}
             mode={mode}

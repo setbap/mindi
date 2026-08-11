@@ -26,20 +26,25 @@ export default defineConfig({
         categories: ["productivity"],
         icons: [
           {
-            src: "/mindi-192.svg",
+            src: "/mindi-192.png",
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
           },
           {
-            src: "/mindi-512.svg",
+            src: "/mindi-512.png",
             sizes: "512x512",
-            type: "image/svg+xml",
+            type: "image/png",
           },
           {
-            src: "/mindi-512.svg",
+            src: "/mindi-512.png",
             sizes: "512x512",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "maskable",
+          },
+          {
+            src: "/apple-touch-icon.png",
+            sizes: "180x180",
+            type: "image/png",
           },
         ],
       },

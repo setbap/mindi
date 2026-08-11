@@ -166,10 +166,10 @@ export function NodeBrowser({
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 w-full flex-col",
+        "flex min-h-0 w-full flex-col",
         sheet
-          ? "gap-3 bg-transparent"
-          : "border-border bg-card gap-2 rounded-lg border p-3 shadow-sm",
+          ? "h-full min-h-0 gap-3 overflow-hidden bg-transparent"
+          : "border-border bg-card h-full gap-2 rounded-lg border p-3 shadow-sm",
       )}
       data-testid="map-node-browser"
       data-variant={variant}
@@ -216,7 +216,7 @@ export function NodeBrowser({
         ref={listRef}
         role="tree"
         aria-label={t("mapNodes")}
-        className="browser-tree min-h-0 flex-1 overflow-auto"
+        className="browser-tree min-h-0 flex-1 overflow-auto overscroll-contain"
       >
         {result.kind === "empty" ? (
           <p className="text-muted-foreground p-2 text-sm" role="status">

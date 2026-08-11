@@ -1,0 +1,5 @@
+.pnpm-store
+bun.lock
+node_modules
+dist
+.git

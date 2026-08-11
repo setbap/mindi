@@ -186,7 +186,7 @@ export function NodeView({
           <textarea
             ref={textareaRef}
             aria-label={t("nodeMarkdown")}
-            className="nodrag nopan nowheel border-border bg-background/50 min-h-24 w-full rounded-md border p-2 font-mono text-sm focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none"
+            className="nodrag nopan nowheel border-border bg-background/50 min-h-24 w-full rounded-md border p-2 font-mono text-base leading-normal focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none md:text-sm"
             style={{ color: chrome.color }}
             value={mode.draft}
             dir="auto"

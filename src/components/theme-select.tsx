@@ -59,7 +59,7 @@ export function ThemeSelect({ variant = "list" }: ThemeSelectProps) {
       <span className="text-foreground shrink-0 text-base">{t("theme")}</span>
       <select
         aria-label={t("theme")}
-        className="border-input bg-background text-foreground ms-auto h-9 min-w-0 flex-1 rounded-md border px-2 text-sm"
+        className="border-input bg-background text-foreground ms-auto h-9 min-w-0 flex-1 rounded-md border px-2 text-base"
         value={themeId}
         onChange={(event) => onChange(event.target.value as ThemeId)}
         data-testid="theme-select"

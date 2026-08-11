@@ -10,8 +10,8 @@ test("production build precaches the SPA shell and manifest assets", async ({
   expect(manifestJson.display).toBe("standalone");
   expect(manifestJson.icons).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ sizes: "192x192" }),
-      expect.objectContaining({ sizes: "512x512" }),
+      expect.objectContaining({ sizes: "192x192", type: "image/png" }),
+      expect.objectContaining({ sizes: "512x512", type: "image/png" }),
     ]),
   );
 

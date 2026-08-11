@@ -199,7 +199,7 @@ export function StructureCommands({
     <>
       {finalNodeBlocked ? (
         <div
-          className="pointer-events-none fixed end-3 bottom-[calc(5.75rem+var(--bottom-safe))] z-50 max-w-xs md:bottom-3"
+          className="pointer-events-none fixed end-3 bottom-3 z-50 hidden max-w-xs md:block"
           data-testid="final-node-delete-guard"
         >
           <p

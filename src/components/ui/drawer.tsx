@@ -52,16 +52,17 @@ function DrawerContent({
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          "bg-background fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85vh] flex-col rounded-t-lg border outline-none",
+          // Cap to visual viewport height so the header/search stay reachable.
+          "bg-background fixed inset-x-0 bottom-0 z-50 flex max-h-[min(85dvh,var(--visible-viewport-height))] flex-col rounded-t-lg border outline-none",
           className,
         )}
         {...props}
       >
         <div className="bg-muted mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full" />
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pt-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-4 pt-2">
           {children}
         </div>
-        <DrawerPrimitive.Close className="ring-offset-background focus:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
+        <DrawerPrimitive.Close className="ring-offset-background focus:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus-visible:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>
         </DrawerPrimitive.Close>
@@ -74,7 +75,7 @@ function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="drawer-header"
-      className={cn("flex flex-col gap-1.5 text-left", className)}
+      className={cn("flex shrink-0 flex-col gap-1.5 text-left", className)}
       {...props}
     />
   );
