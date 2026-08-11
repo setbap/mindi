@@ -11,6 +11,7 @@ import { NodeBrowser } from "@/components/node-browser";
 import { StructureCommands } from "@/components/structure-commands";
 import { StructureLiveRegion } from "@/components/structure-live-region";
 import { StyleCommands } from "@/components/style-commands";
+import { ThemeSelect } from "@/components/theme-select";
 import { ToolsPanel } from "@/components/tools-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -371,33 +372,36 @@ function ReadyApp({ app }: { app: ReadyController }) {
                   <h3 className="text-muted-foreground px-0.5 text-[11px] font-semibold tracking-wide uppercase">
                     {t("toolsSectionApp")}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="size-8 p-0"
-                      title={t("mapManager")}
-                      aria-label={t("mapManager")}
-                      onClick={() => setManagerOpen(true)}
-                    >
-                      <FolderOpen />
-                    </Button>
-                    <label className="flex min-w-0 flex-1 items-center">
-                      <span className="sr-only">{t("language")}</span>
-                      <select
-                        aria-label={t("language")}
-                        className="border-input bg-background text-muted-foreground h-8 w-full rounded-md border px-2 text-xs"
-                        value={language}
-                        onChange={(event) => {
-                          void setLanguage(event.target.value as Language);
-                        }}
-                        data-testid="language-select"
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="size-8 p-0"
+                        title={t("mapManager")}
+                        aria-label={t("mapManager")}
+                        onClick={() => setManagerOpen(true)}
                       >
-                        <option value="en">{t("languageEnglish")}</option>
-                        <option value="fa">{t("languagePersian")}</option>
-                      </select>
-                    </label>
+                        <FolderOpen />
+                      </Button>
+                      <label className="flex min-w-0 flex-1 items-center">
+                        <span className="sr-only">{t("language")}</span>
+                        <select
+                          aria-label={t("language")}
+                          className="border-input bg-background text-muted-foreground h-8 w-full rounded-md border px-2 text-xs"
+                          value={language}
+                          onChange={(event) => {
+                            void setLanguage(event.target.value as Language);
+                          }}
+                          data-testid="language-select"
+                        >
+                          <option value="en">{t("languageEnglish")}</option>
+                          <option value="fa">{t("languagePersian")}</option>
+                        </select>
+                      </label>
+                    </div>
+                    <ThemeSelect variant="dock" />
                   </div>
                 </section>
               </div>
@@ -546,6 +550,7 @@ function ReadyApp({ app }: { app: ReadyController }) {
                       <option value="fa">{t("languagePersian")}</option>
                     </select>
                   </label>
+                  <ThemeSelect variant="list" />
                 </section>
               </DrawerContent>
             </Drawer>

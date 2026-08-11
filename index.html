@@ -31,6 +31,45 @@
         background-color: #282828;
       }
     </style>
+    <script>
+      /* Apply stored theme before paint so Safari chrome matches. */
+      (function () {
+        var themes = {
+          gruvbox: "#282828",
+          "tokyo-night": "#1a1b26",
+          catppuccin: "#1e1e2e",
+          nord: "#2e3440",
+          "one-dark": "#282c34",
+          "github-dark": "#0d1117",
+          "cursor-dark": "#181818",
+          vercel: "#000000",
+          cloudflare: "#1d1f20",
+        };
+        var id = "gruvbox";
+        try {
+          var stored = localStorage.getItem("mindi.theme");
+          if (stored && themes[stored]) {
+            id = stored;
+          }
+        } catch (e) {}
+        var bg = themes[id];
+        if (id !== "gruvbox") {
+          document.documentElement.setAttribute("data-theme", id);
+        }
+        document.documentElement.style.backgroundColor = bg;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) {
+          meta.setAttribute("content", bg);
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+          document.body.style.backgroundColor = bg;
+          var tint = document.querySelector(".safari-chrome-tint");
+          if (tint) {
+            tint.style.backgroundColor = bg;
+          }
+        });
+      })();
+    </script>
   </head>
   <body style="background-color: #282828; color-scheme: dark">
     <div class="safari-chrome-tint" aria-hidden="true"></div>

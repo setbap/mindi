@@ -49,6 +49,7 @@ export type MessageKey =
   | "language"
   | "languageEnglish"
   | "languagePersian"
+  | "theme"
   | "structureCommands"
   | "styleCommands"
   | "toolsSectionMap"
@@ -140,6 +141,7 @@ const en: Messages = {
   language: "Language",
   languageEnglish: "English",
   languagePersian: "Persian",
+  theme: "Theme",
   structureCommands: "Structure commands",
   styleCommands: "Style commands",
   toolsSectionMap: "Map",
@@ -230,6 +232,7 @@ const fa: Messages = {
   language: "زبان",
   languageEnglish: "انگلیسی",
   languagePersian: "فارسی",
+  theme: "پوسته",
   structureCommands: "فرمان‌های ساختار",
   styleCommands: "فرمان‌های ظاهر",
   toolsSectionMap: "نقشه",

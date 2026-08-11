@@ -34,6 +34,186 @@
   --canvas-grid-color: rgb(168 153 132 / 0.12);
 }
 
+/* Dark theme variants selected via data-theme on <html>. */
+[data-theme="tokyo-night"] {
+  --background: #1a1b26;
+  --foreground: #c0caf5;
+  --card: #24283b;
+  --card-foreground: #c0caf5;
+  --popover: #24283b;
+  --popover-foreground: #c0caf5;
+  --primary: #7aa2f7;
+  --primary-foreground: #1a1b26;
+  --secondary: #414868;
+  --secondary-foreground: #c0caf5;
+  --muted: #414868;
+  --muted-foreground: #a9b1d6;
+  --accent: #414868;
+  --accent-foreground: #c0caf5;
+  --destructive: #f7768e;
+  --border: #3b4261;
+  --input: #3b4261;
+  --ring: #7aa2f7;
+  --canvas-grid-color: rgb(122 162 247 / 0.12);
+}
+
+[data-theme="catppuccin"] {
+  --background: #1e1e2e;
+  --foreground: #cdd6f4;
+  --card: #313244;
+  --card-foreground: #cdd6f4;
+  --popover: #313244;
+  --popover-foreground: #cdd6f4;
+  --primary: #cba6f7;
+  --primary-foreground: #1e1e2e;
+  --secondary: #45475a;
+  --secondary-foreground: #cdd6f4;
+  --muted: #45475a;
+  --muted-foreground: #a6adc8;
+  --accent: #45475a;
+  --accent-foreground: #cdd6f4;
+  --destructive: #f38ba8;
+  --border: #585b70;
+  --input: #585b70;
+  --ring: #cba6f7;
+  --canvas-grid-color: rgb(203 166 247 / 0.12);
+}
+
+[data-theme="nord"] {
+  --background: #2e3440;
+  --foreground: #eceff4;
+  --card: #3b4252;
+  --card-foreground: #eceff4;
+  --popover: #3b4252;
+  --popover-foreground: #eceff4;
+  --primary: #88c0d0;
+  --primary-foreground: #2e3440;
+  --secondary: #434c5e;
+  --secondary-foreground: #eceff4;
+  --muted: #434c5e;
+  --muted-foreground: #d8dee9;
+  --accent: #434c5e;
+  --accent-foreground: #eceff4;
+  --destructive: #bf616a;
+  --border: #4c566a;
+  --input: #4c566a;
+  --ring: #88c0d0;
+  --canvas-grid-color: rgb(136 192 208 / 0.12);
+}
+
+[data-theme="one-dark"] {
+  --background: #282c34;
+  --foreground: #abb2bf;
+  --card: #21252b;
+  --card-foreground: #abb2bf;
+  --popover: #21252b;
+  --popover-foreground: #abb2bf;
+  --primary: #61afef;
+  --primary-foreground: #282c34;
+  --secondary: #3e4451;
+  --secondary-foreground: #abb2bf;
+  --muted: #3e4451;
+  --muted-foreground: #5c6370;
+  --accent: #3e4451;
+  --accent-foreground: #abb2bf;
+  --destructive: #e06c75;
+  --border: #4b5263;
+  --input: #4b5263;
+  --ring: #61afef;
+  --canvas-grid-color: rgb(97 175 239 / 0.12);
+}
+
+[data-theme="github-dark"] {
+  --background: #0d1117;
+  --foreground: #e6edf3;
+  --card: #161b22;
+  --card-foreground: #e6edf3;
+  --popover: #161b22;
+  --popover-foreground: #e6edf3;
+  --primary: #2f81f7;
+  --primary-foreground: #ffffff;
+  --secondary: #21262d;
+  --secondary-foreground: #e6edf3;
+  --muted: #21262d;
+  --muted-foreground: #8b949e;
+  --accent: #21262d;
+  --accent-foreground: #e6edf3;
+  --destructive: #f85149;
+  --border: #30363d;
+  --input: #30363d;
+  --ring: #2f81f7;
+  --canvas-grid-color: rgb(47 129 247 / 0.12);
+}
+
+/* Cursor / VS Code Dark Modern–inspired */
+[data-theme="cursor-dark"] {
+  --background: #181818;
+  --foreground: #cccccc;
+  --card: #1f1f1f;
+  --card-foreground: #cccccc;
+  --popover: #252526;
+  --popover-foreground: #cccccc;
+  --primary: #0078d4;
+  --primary-foreground: #ffffff;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #cccccc;
+  --muted: #2a2a2a;
+  --muted-foreground: #9d9d9d;
+  --accent: #2a2a2a;
+  --accent-foreground: #cccccc;
+  --destructive: #f14c4c;
+  --border: #3c3c3c;
+  --input: #3c3c3c;
+  --ring: #0078d4;
+  --canvas-grid-color: rgb(204 204 204 / 0.1);
+}
+
+/* Vercel dashboard–inspired (near-black / zinc) */
+[data-theme="vercel"] {
+  --background: #000000;
+  --foreground: #ededed;
+  --card: #0a0a0a;
+  --card-foreground: #ededed;
+  --popover: #111111;
+  --popover-foreground: #ededed;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #171717;
+  --secondary-foreground: #ededed;
+  --muted: #171717;
+  --muted-foreground: #a1a1a1;
+  --accent: #171717;
+  --accent-foreground: #ededed;
+  --destructive: #ff6369;
+  --border: #262626;
+  --input: #262626;
+  --ring: #ffffff;
+  --canvas-grid-color: rgb(255 255 255 / 0.08);
+}
+
+/* Cloudflare dashboard–inspired (charcoal + orange) */
+[data-theme="cloudflare"] {
+  --background: #1d1f20;
+  --foreground: #f3f3f4;
+  --card: #292b2f;
+  --card-foreground: #f3f3f4;
+  --popover: #292b2f;
+  --popover-foreground: #f3f3f4;
+  --primary: #f6821f;
+  --primary-foreground: #1d1f20;
+  --secondary: #3a3d42;
+  --secondary-foreground: #f3f3f4;
+  --muted: #3a3d42;
+  --muted-foreground: #b0b3b8;
+  --accent: #3a3d42;
+  --accent-foreground: #f3f3f4;
+  --destructive: #ee3f3f;
+  --border: #4a4e55;
+  --input: #4a4e55;
+  --ring: #f6821f;
+  --canvas-grid-color: rgb(246 130 31 / 0.12);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

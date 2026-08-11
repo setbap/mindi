@@ -137,7 +137,7 @@ Follow [ADR 0005](adr/0005-accessible-map-canvas.md).
 
 The mobile action bar is a shell-owned DOM sibling of React Flow, not a viewport child. It overlays the full-bleed canvas (absolute bottom chrome) and must not reserve a layout row that shrinks the Map stage. Use `interactive-widget=resizes-content`, safe-area padding, and a `VisualViewport` CSS-variable fallback. Do not baseline the experimental VirtualKeyboard overlay API. When viewport geometry changes, do not move Nodes; after resize settles, check Focused visibility at most once. See [mobile research](research/mobile-keyboard-aware-bottom-bar.md).
 
-On mobile (`<768px`), the shell is a full-bleed canvas with overlay chrome: top undo / editable Map title / redo; bottom Structure+App and Style entry points, create-child, focused-Node pill (opens the Node browser Vaul drawer), and create-sibling. Structure, Style, and Node browser live in Vaul drawers (one open at a time). App controls (Maps, language) live in the Structure+App drawer.
+On mobile (`<768px`), the shell is a full-bleed canvas with overlay chrome: top undo / editable Map title / redo; bottom Structure+App and Style entry points, create-child, focused-Node pill (opens the Node browser Vaul drawer), and create-sibling. Structure, Style, and Node browser live in Vaul drawers (one open at a time). App controls (Map manager, language, theme) live in the Structure+App drawer.
 
 ## Markdown and clipboard
 
@@ -183,7 +183,7 @@ Production release testing must install online, close, launch offline, exercise 
 
 ## Visual system and language
 
-Use React, Vite, strict TypeScript, Tailwind CSS, and selectively installed shadcn/ui ([ADR 0003](adr/0003-tailwind-and-shadcn-ui.md)). Use Gruvbox-dark semantic CSS tokens for surfaces, text, borders, depth, destructive actions, and focus rings. Palette remains separate from Theme. Use shadcn Sonner for non-blocking notices. Use **Vaul** for mobile bottom drawers; do not add MUI. Desktop overlays remain Dialog-based.
+Use React, Vite, strict TypeScript, Tailwind CSS, and selectively installed shadcn/ui ([ADR 0003](adr/0003-tailwind-and-shadcn-ui.md)). Use dark semantic CSS tokens for surfaces, text, borders, depth, destructive actions, and focus rings. Users can choose among built-in dark themes (persisted locally); theme changes update shell chrome including Safari toolbar tint. Palette remains separate from Theme. Use shadcn Sonner for non-blocking notices. Use **Vaul** for mobile bottom drawers; do not add MUI. Desktop overlays remain Dialog-based.
 
 Language is a persisted application setting: English by default and Persian when chosen by the user. Translate all shipped visible UI, dialogs, notices, and accessibility labels. Persian uses RTL chrome and moves the sidebar to the right, but **never reverses the Map**: layout, Root/sibling order, traversal, shortcuts, and Connector direction remain left-to-right. Node text uses `dir="auto"`. JSON fields, technical errors, keyboard shortcuts, and Map structure are locale-neutral; missing translations fall back to English.
 
