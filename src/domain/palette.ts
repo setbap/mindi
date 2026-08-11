@@ -34,7 +34,10 @@ export const NODE_INK_LIGHT = "#fbf1c7";
 export const NODE_TEXT_CONTRAST_MIN = 4.5;
 
 export interface NodeChrome {
+  /** Soft fill: theme card gray mixed with the Palette accent. */
   background: string;
+  /** Full Palette accent used as the Node border. */
+  borderColor: string;
   color: string;
   mutedColor: string;
 }
@@ -53,26 +56,6 @@ function parseHexRgb(hex: string): [number, number, number] | null {
     Number.parseInt(raw.slice(0, 2), 16),
     Number.parseInt(raw.slice(2, 4), 16),
     Number.parseInt(raw.slice(4, 6), 16),
-  ];
-}
-
-function toHex([r, g, b]: [number, number, number]): string {
-  return `#${[r, g, b]
-    .map((channel) =>
-      Math.round(channel).toString(16).padStart(2, "0"),
-    )
-    .join("")}`;
-}
-
-function mixRgb(
-  from: [number, number, number],
-  to: [number, number, number],
-  amount: number,
-): [number, number, number] {
-  return [
-    from[0] + (to[0] - from[0]) * amount,
-    from[1] + (to[1] - from[1]) * amount,
-    from[2] + (to[2] - from[2]) * amount,
   ];
 }
 
@@ -112,38 +95,16 @@ export function contrastInk(backgroundHex: string): string {
 }
 
 /**
- * Resolve a Node fill + ink pair that keeps Palette color and AA text contrast.
- * When the raw slot hex is too mid-tone, nudge it toward white/black until ink
- * reaches {@link NODE_TEXT_CONTRAST_MIN}.
+ * Resolve Node chrome: muted card-tinted fill + Palette-colored border.
+ * Text uses theme foreground so it stays readable over the gray overlay.
  */
 export function nodeChrome(accentHex: string): NodeChrome {
-  const rgb = parseHexRgb(accentHex);
-  if (!rgb) {
-    return {
-      background: accentHex,
-      color: NODE_INK_LIGHT,
-      mutedColor: `color-mix(in srgb, ${NODE_INK_LIGHT} 72%, transparent)`,
-    };
-  }
-
-  const ink = contrastInk(accentHex);
-  const toward: [number, number, number] =
-    ink === NODE_INK_DARK ? [255, 255, 255] : [0, 0, 0];
-
-  let background = accentHex;
-  let amount = 0;
-  while (
-    (contrastRatio(background, ink) ?? 0) < NODE_TEXT_CONTRAST_MIN &&
-    amount < 0.72
-  ) {
-    amount += 0.04;
-    background = toHex(mixRgb(rgb, toward, amount));
-  }
-
+  const accent = parseHexRgb(accentHex) ? accentHex : "#a89984";
   return {
-    background,
-    color: ink,
-    mutedColor: `color-mix(in srgb, ${ink} 72%, ${background})`,
+    background: `color-mix(in srgb, var(--card) 78%, ${accent} 22%)`,
+    borderColor: accent,
+    color: "var(--foreground)",
+    mutedColor: "var(--muted-foreground)",
   };
 }
 

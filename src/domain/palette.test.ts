@@ -3,10 +3,8 @@ import { describe, expect, it } from "vitest";
 import { createInitialCatalog, createUntitledMap } from "./forest";
 import {
   contrastInk,
-  contrastRatio,
   NODE_INK_DARK,
   NODE_INK_LIGHT,
-  NODE_TEXT_CONTRAST_MIN,
   nodeChrome,
   paletteColor,
   relativeLuminance,
@@ -58,20 +56,21 @@ describe("contrastInk", () => {
 });
 
 describe("nodeChrome", () => {
-  it("keeps AA text contrast for every default Palette slot", () => {
+  it("uses a muted card overlay fill and Palette border for each default slot", () => {
     for (const hex of DEFAULT_PALETTE) {
       const chrome = nodeChrome(hex);
-      const ratio = contrastRatio(chrome.background, chrome.color);
-      expect(ratio).not.toBeNull();
-      expect(ratio!).toBeGreaterThanOrEqual(NODE_TEXT_CONTRAST_MIN);
+      expect(chrome.borderColor.toLowerCase()).toBe(hex.toLowerCase());
+      expect(chrome.background).toContain("color-mix");
+      expect(chrome.background).toContain("var(--card)");
+      expect(chrome.background.toLowerCase()).toContain(hex.toLowerCase());
+      expect(chrome.color).toBe("var(--foreground)");
+      expect(chrome.mutedColor).toBe("var(--muted-foreground)");
     }
   });
 
-  it("nudges mid-tone fills until ink is readable", () => {
-    const chrome = nodeChrome("#d65d0e");
-    expect(chrome.background.toLowerCase()).not.toBe("#d65d0e");
-    expect(contrastRatio(chrome.background, chrome.color)!).toBeGreaterThanOrEqual(
-      NODE_TEXT_CONTRAST_MIN,
-    );
+  it("falls back to a muted accent when the hex is invalid", () => {
+    const chrome = nodeChrome("not-a-color");
+    expect(chrome.borderColor).toBe("#a89984");
+    expect(chrome.background).toContain("color-mix");
   });
 });

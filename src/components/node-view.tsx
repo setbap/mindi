@@ -164,12 +164,12 @@ export function NodeView({
       aria-label={label}
       data-testid={`node-${node.id}`}
       className={cn(
-        "nodrag nopan relative rounded-md border border-black/20 p-3 outline-none",
-        isFocused && "border-transparent",
+        "nodrag nopan relative rounded-md border-2 p-3 outline-none",
       )}
       style={{
         width: "100%",
         backgroundColor: chrome.background,
+        borderColor: chrome.borderColor,
         color: chrome.color,
         boxShadow: isFocused
           ? "0 0 0 3px var(--background), 0 0 0 5px var(--ring)"
@@ -186,7 +186,7 @@ export function NodeView({
           <textarea
             ref={textareaRef}
             aria-label={t("nodeMarkdown")}
-            className="nodrag nopan nowheel min-h-24 w-full rounded-md border border-black/15 bg-black/10 p-2 font-mono text-sm focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:outline-none"
+            className="nodrag nopan nowheel border-border bg-background/50 min-h-24 w-full rounded-md border p-2 font-mono text-sm focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none"
             style={{ color: chrome.color }}
             value={mode.draft}
             dir="auto"
@@ -227,7 +227,7 @@ export function NodeView({
           type="button"
           aria-label={t("resizeNode")}
           data-testid={`resize-handle-${node.id}`}
-          className="nopan nodrag absolute top-0 right-0 h-full w-2 cursor-ew-resize rounded-r-md bg-transparent hover:bg-black/15"
+          className="nopan nodrag absolute top-0 right-0 h-full w-2 cursor-ew-resize rounded-r-md bg-transparent hover:bg-foreground/10"
           onPointerDown={onResizePointerDown}
           onPointerMove={onResizePointerMove}
           onPointerUp={onResizePointerUp}
