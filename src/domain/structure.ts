@@ -1,16 +1,17 @@
 import { createEmptyRootNode, createId, ForestInvariantError } from "./forest";
-import type { MapRecord, NodeRecord } from "./types";
+import type { ColorSlot, MapRecord, NodeRecord } from "./types";
 import { DEFAULT_NODE_WIDTH } from "./types";
 
 export function createEmptyNode(
   parentId: string | null,
   id = createId(),
+  colorSlot: ColorSlot = 1,
 ): NodeRecord {
   return {
     id,
     markdown: "",
     width: DEFAULT_NODE_WIDTH,
-    colorSlot: 1,
+    colorSlot,
     parentId,
     childIds: [],
   };
@@ -75,8 +76,8 @@ export function createSiblingBelow(
 
   const newNode =
     node.parentId === null
-      ? createEmptyRootNode()
-      : createEmptyNode(node.parentId);
+      ? createEmptyRootNode(createId(), node.colorSlot)
+      : createEmptyNode(node.parentId, createId(), node.colorSlot);
   const order = [...siblingIds(map, nodeId)];
   const index = order.indexOf(nodeId);
   order.splice(index + 1, 0, newNode.id);
@@ -102,7 +103,7 @@ export function createLastChild(
     throw new ForestInvariantError(`Node ${nodeId} is missing.`);
   }
 
-  const newNode = createEmptyNode(parent.id);
+  const newNode = createEmptyNode(parent.id, createId(), parent.colorSlot);
   return {
     map: {
       ...map,
@@ -152,8 +153,11 @@ export interface StructureResult {
 }
 
 /** Append an empty Root and focus it. */
-export function createRoot(map: MapRecord): StructureResult {
-  const root = createEmptyRootNode();
+export function createRoot(
+  map: MapRecord,
+  colorSlot: ColorSlot = 1,
+): StructureResult {
+  const root = createEmptyRootNode(createId(), colorSlot);
   return {
     map: {
       ...map,

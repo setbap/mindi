@@ -4,6 +4,7 @@ import {
   DEFAULT_PALETTE,
   SCHEMA_VERSION,
   type CatalogRecord,
+  type ColorSlot,
   type MapRecord,
   type NodeRecord,
 } from "./types";
@@ -19,12 +20,15 @@ export function createId(): string {
   return crypto.randomUUID();
 }
 
-export function createEmptyRootNode(id = createId()): NodeRecord {
+export function createEmptyRootNode(
+  id = createId(),
+  colorSlot: ColorSlot = 1,
+): NodeRecord {
   return {
     id,
     markdown: "",
     width: DEFAULT_NODE_WIDTH,
-    colorSlot: 1,
+    colorSlot,
     parentId: null,
     childIds: [],
   };

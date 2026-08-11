@@ -159,6 +159,19 @@ export function StructureCommands({
 
   const overlays = (
     <>
+      {finalNodeBlocked ? (
+        <div
+          className="pointer-events-none fixed end-3 bottom-3 z-50 max-w-xs"
+          data-testid="final-node-delete-guard"
+        >
+          <p
+            className="border-border bg-card text-card-foreground pointer-events-auto rounded-lg border px-3 py-2 text-sm shadow-sm"
+            role="status"
+          >
+            {t("finalNodeCannotDelete")}
+          </p>
+        </div>
+      ) : null}
       <ResponsiveOverlay
         open={moveUnderOpen}
         onOpenChange={setMoveUnderOpen}
@@ -261,14 +274,6 @@ export function StructureCommands({
           }
           onClick={requestDelete}
         />
-        {finalNodeBlocked ? (
-          <p
-            className="text-muted-foreground basis-full px-0.5 text-xs leading-snug"
-            role="status"
-          >
-            {t("finalNodeCannotDelete")}
-          </p>
-        ) : null}
         {overlays}
       </div>
     );
@@ -344,11 +349,6 @@ export function StructureCommands({
       >
         {t("delete")}
       </Button>
-      {finalNodeBlocked ? (
-        <p className="text-muted-foreground text-sm" role="status">
-          {t("finalNodeCannotDelete")}
-        </p>
-      ) : null}
       {overlays}
     </div>
   );

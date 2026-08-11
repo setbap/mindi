@@ -94,6 +94,34 @@
     stroke: var(--canvas-grid-color);
   }
 
+  .map-canvas-host .react-flow__node-mindi {
+    overflow: visible;
+  }
+
+  .browser-tree {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--card);
+  }
+
+  .browser-tree::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+
+  .browser-tree::-webkit-scrollbar-track {
+    background: var(--card);
+  }
+
+  .browser-tree::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+    border: 2px solid var(--card);
+  }
+
+  .browser-tree::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+
   .browser-tree-guides {
     display: flex;
     flex-shrink: 0;

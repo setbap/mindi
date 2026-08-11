@@ -16,10 +16,10 @@ test("resize, color slot, and undo persist on the Open Map", async ({
   await expect(root).toHaveCSS("width", "360px");
 
   await styles.getByRole("button", { name: "Color slot 4" }).click();
-  await expect(root).toHaveCSS("border-left-color", "rgb(184, 187, 38)");
+  await expect(root).toHaveCSS("background-color", "rgb(184, 187, 38)");
 
   await styles.getByRole("button", { name: "Undo" }).click();
-  await expect(root).not.toHaveCSS("border-left-color", "rgb(184, 187, 38)");
+  await expect(root).not.toHaveCSS("background-color", "rgb(184, 187, 38)");
 
   await styles.getByRole("button", { name: "Undo" }).click();
   await expect(root).toHaveCSS("width", "280px");

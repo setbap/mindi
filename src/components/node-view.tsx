@@ -11,6 +11,7 @@ import { SafeMarkdown } from "@/components/safe-markdown";
 import { normalizeClipboardPlainText } from "@/domain/clipboard";
 import type { InteractionMode } from "@/domain/interaction";
 import { nodeLabel } from "@/domain/node-browser";
+import { nodeChrome } from "@/domain/palette";
 import {
   clampNodeWidth,
   MAX_NODE_WIDTH,
@@ -53,6 +54,8 @@ export function NodeView({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const chrome = nodeChrome(accentColor);
+  const isEmpty = node.markdown.trim().length === 0;
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -161,13 +164,16 @@ export function NodeView({
       aria-label={label}
       data-testid={`node-${node.id}`}
       className={cn(
-        "bg-card text-card-foreground nodrag nopan relative rounded-md border p-3 outline-none",
-        isFocused && "ring-ring border-ring ring-2",
+        "nodrag nopan relative rounded-md border border-black/20 p-3 outline-none",
+        isFocused && "border-transparent",
       )}
       style={{
         width: "100%",
-        borderLeftWidth: 4,
-        borderLeftColor: accentColor,
+        backgroundColor: chrome.background,
+        color: chrome.color,
+        boxShadow: isFocused
+          ? "0 0 0 3px var(--background), 0 0 0 5px var(--ring)"
+          : undefined,
       }}
       onClick={(event) => {
         event.stopPropagation();
@@ -180,7 +186,8 @@ export function NodeView({
           <textarea
             ref={textareaRef}
             aria-label={t("nodeMarkdown")}
-            className="border-input bg-background focus-visible:ring-ring nodrag nopan nowheel min-h-24 w-full rounded-md border p-2 font-mono text-sm focus-visible:ring-2 focus-visible:outline-none"
+            className="nodrag nopan nowheel min-h-24 w-full rounded-md border border-black/15 bg-black/10 p-2 font-mono text-sm focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:outline-none"
+            style={{ color: chrome.color }}
             value={mode.draft}
             dir="auto"
             onChange={(event) => onDraftChange(event.target.value)}
@@ -192,10 +199,8 @@ export function NodeView({
         </label>
       ) : (
         <div
-          className={cn(
-            "min-h-6 text-sm",
-            node.markdown === "" && "text-muted-foreground italic",
-          )}
+          className={cn("min-h-6 text-sm", isEmpty && "italic")}
+          style={isEmpty ? { color: chrome.mutedColor } : undefined}
           dir="auto"
           onClick={(event) => {
             event.stopPropagation();
@@ -206,7 +211,7 @@ export function NodeView({
             onFocus(node.id);
           }}
         >
-          {node.markdown === "" ? (
+          {isEmpty ? (
             t("startTyping")
           ) : (
             <SafeMarkdown
@@ -222,7 +227,7 @@ export function NodeView({
           type="button"
           aria-label={t("resizeNode")}
           data-testid={`resize-handle-${node.id}`}
-          className="nopan nodrag absolute top-0 right-0 h-full w-2 cursor-ew-resize rounded-r-md bg-transparent hover:bg-black/10"
+          className="nopan nodrag absolute top-0 right-0 h-full w-2 cursor-ew-resize rounded-r-md bg-transparent hover:bg-black/15"
           onPointerDown={onResizePointerDown}
           onPointerMove={onResizePointerMove}
           onPointerUp={onResizePointerUp}
@@ -231,7 +236,10 @@ export function NodeView({
       ) : null}
 
       {previewWidth !== null ? (
-        <span className="text-muted-foreground absolute -bottom-5 right-0 text-xs">
+        <span
+          className="absolute -bottom-5 right-0 text-xs"
+          style={{ color: chrome.mutedColor }}
+        >
           {previewWidth}px ({MIN_NODE_WIDTH}–{MAX_NODE_WIDTH})
         </span>
       ) : null}

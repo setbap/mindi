@@ -48,6 +48,17 @@ describe("Focused and Editing interaction", () => {
     expect(snapshot.dirty).toBe(true);
   });
 
+  it("keeps the Focused Node Color slot on sibling and child creates", () => {
+    let snapshot = createInitialInteraction(createUntitledMap("map-1"));
+    snapshot = reduceInteraction(snapshot, { type: "setColorSlot", slot: 5 });
+
+    snapshot = reduceInteraction(snapshot, { type: "createSibling" });
+    expect(snapshot.map.nodes[snapshot.mode.focusedId].colorSlot).toBe(5);
+
+    snapshot = reduceInteraction(snapshot, { type: "createChild" });
+    expect(snapshot.map.nodes[snapshot.mode.focusedId].colorSlot).toBe(5);
+  });
+
   it("typing while Focused enters Editing with that character", () => {
     const map = createUntitledMap("map-1");
     const snapshot = createInitialInteraction(map);

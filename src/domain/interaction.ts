@@ -218,7 +218,8 @@ export function reduceInteraction(
       };
     }
     case "createRoot": {
-      const result = createRoot(map);
+      const focused = map.nodes[mode.focusedId];
+      const result = createRoot(map, focused?.colorSlot ?? 1);
       return {
         map: result.map,
         mode: { kind: "focused", focusedId: result.focusedId },

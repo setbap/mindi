@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createUntitledMap } from "./forest";
+import { setNodeColorSlot } from "./palette";
 import {
   canDeleteNode,
   canDetach,
@@ -100,6 +101,21 @@ describe("structure commands for Focused mode", () => {
     expect(next.rootIds).toEqual([rootId]);
     expect(next.nodes[rootId].childIds).toEqual([newNodeId]);
     expect(next.nodes[newNodeId].parentId).toBe(rootId);
+  });
+
+  it("inherits Color slot when creating a sibling or child", () => {
+    let map = createUntitledMap("map-1");
+    const rootId = map.rootIds[0];
+    map = setNodeColorSlot(map, rootId, 4);
+
+    const sibling = createSiblingBelow(map, rootId);
+    expect(sibling.map.nodes[sibling.newNodeId].colorSlot).toBe(4);
+
+    const child = createLastChild(sibling.map, rootId);
+    expect(child.map.nodes[child.newNodeId].colorSlot).toBe(4);
+
+    const rooted = createRoot(sibling.map, 4);
+    expect(rooted.map.nodes[rooted.focusedId].colorSlot).toBe(4);
   });
 
   it("commits Node markdown", () => {

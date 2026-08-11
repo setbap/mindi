@@ -282,8 +282,9 @@ function MapCanvasFlow({
           node?.height ?? node?.measured?.height ?? layoutRect?.height ?? 48;
         const x = (node?.position.x ?? layoutRect!.x) + width / 2;
         const y = (node?.position.y ?? layoutRect!.y) + height / 2;
+        const zoom = getZoom() || storeApi.getState().transform[2] || 1;
         void setCenter(x, y, {
-          zoom: Math.max(getZoom() || 1, 0.85),
+          zoom,
           duration,
         }).then((ok) => {
           if (ok) {
